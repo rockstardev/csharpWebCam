@@ -184,7 +184,7 @@ namespace Touchless.Vision.Camera
 
         public void ShowPropertiesDialog()
         {
-            _cameraMethods.DisplayCameraPropertiesDialog(_index); 
+            _cameraMethods.DisplayCameraPropertiesDialog(_index);
         }
 
         public void GetCameraInfo()
@@ -237,66 +237,66 @@ namespace Touchless.Vision.Camera
         /// <summary>
         /// Here is where the images come in as they are collected, as fast as they can and on a background thread
         /// </summary>
-private void CaptureCallbackProc(int dataSize, byte[] data)
-{
-    // Do the magic to create a bitmap
-    int stride = _width * 3;
-    GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-    var scan0 = (int)handle.AddrOfPinnedObject();
-    scan0 += (_height - 1) * stride;
-    var b = new Bitmap(_width, _height, -stride, PixelFormat.Format24bppRgb, (IntPtr)scan0);
-    b.RotateFlip(_rotateFlip);
-    // NOTE: It seems that bntr has made that resolution property work properly
-    var copyBitmap = (Bitmap)b.Clone();
-    // Copy the image using the Thumbnail function to also resize if needed
-    //var copyBitmap = (Bitmap)b.GetThumbnailImage(_width, _height, null, IntPtr.Zero);
-
-    // Now you can free the handle
-    handle.Free();
-
-    ImageCaptured(copyBitmap);
-}
-
-private void ImageCaptured(Bitmap bitmap)
-{
-    DateTime dtCap = DateTime.Now;
-
-    // Always save the bitmap
-    lock (_bitmapLock)
-    {
-        _bitmap = bitmap;
-    }
-
-    // FPS affects the callbacks only
-    if (_fpslimit != -1)
-    {
-        if (_dtLastCap != DateTime.MinValue)
+        private void CaptureCallbackProc(int dataSize, byte[] data)
         {
-            double milliseconds = ((dtCap.Ticks - _dtLastCap.Ticks) / TimeSpan.TicksPerMillisecond) * 1.15;
-            if (milliseconds + _timeBehind >= _timeBetweenFrames)
+            // Do the magic to create a bitmap
+            int stride = _width * 3;
+            GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
+            var scan0 = (int)handle.AddrOfPinnedObject();
+            scan0 += (_height - 1) * stride;
+            var b = new Bitmap(_width, _height, -stride, PixelFormat.Format24bppRgb, (IntPtr)scan0);
+            b.RotateFlip(_rotateFlip);
+            // NOTE: It seems that bntr has made that resolution property work properly
+            var copyBitmap = (Bitmap)b.Clone();
+            // Copy the image using the Thumbnail function to also resize if needed
+            //var copyBitmap = (Bitmap)b.GetThumbnailImage(_width, _height, null, IntPtr.Zero);
+
+            // Now you can free the handle
+            handle.Free();
+
+            ImageCaptured(copyBitmap);
+        }
+
+        private void ImageCaptured(Bitmap bitmap)
+        {
+            DateTime dtCap = DateTime.Now;
+
+            // Always save the bitmap
+            lock (_bitmapLock)
             {
-                _timeBehind = (milliseconds - _timeBetweenFrames);
-                if (_timeBehind < 0.0)
+                _bitmap = bitmap;
+            }
+
+            // FPS affects the callbacks only
+            if (_fpslimit != -1)
+            {
+                if (_dtLastCap != DateTime.MinValue)
                 {
-                    _timeBehind = 0.0;
+                    double milliseconds = ((dtCap.Ticks - _dtLastCap.Ticks) / TimeSpan.TicksPerMillisecond) * 1.15;
+                    if (milliseconds + _timeBehind >= _timeBetweenFrames)
+                    {
+                        _timeBehind = (milliseconds - _timeBetweenFrames);
+                        if (_timeBehind < 0.0)
+                        {
+                            _timeBehind = 0.0;
+                        }
+                    }
+                    else
+                    {
+                        _timeBehind = 0.0;
+                        return; // ignore the frame
+                    }
                 }
             }
-            else
+
+            if (OnImageCaptured != null)
             {
-                _timeBehind = 0.0;
-                return; // ignore the frame
+                var fps = (int)(1 / dtCap.Subtract(_dtLastCap).TotalSeconds);
+                OnImageCaptured.Invoke(this, new CameraEventArgs(bitmap, fps));
             }
+
+            _dtLastCap = dtCap;
         }
-    }
-
-    if (OnImageCaptured != null)
-    {
-        var fps = (int)(1 / dtCap.Subtract(_dtLastCap).TotalSeconds);
-        OnImageCaptured.Invoke(this, new CameraEventArgs(bitmap, fps));
-    }
-
-    _dtLastCap = dtCap;
-}
 
         #endregion
     }
