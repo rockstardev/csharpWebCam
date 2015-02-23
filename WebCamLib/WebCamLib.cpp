@@ -16,7 +16,7 @@
 
 #pragma include_alias( "dxtrans.h", "qedit.h" )
 
-#include <qedit.h>
+#include "qedit.h"
 #include "WebCamLib.h"
 
 using namespace System;
