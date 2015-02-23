@@ -48,3 +48,4 @@ gen/
 
 #Idea
 .idea/
+*.opensdf

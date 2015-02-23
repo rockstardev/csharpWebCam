@@ -59,6 +59,11 @@ namespace WebCamLib
 		void StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height);
 
 		/// <summary>
+		/// Set VideoProcAmpProperty
+		/// </summary>
+		void SetProperty(long lProperty, long lValue, bool bAuto);
+
+		/// <summary>
 		/// Stops the currently running camera and cleans up any global resources
 		/// </summary>
 		void Cleanup();
@@ -131,6 +136,8 @@ namespace WebCamLib
 		/// Setup the callback functionality for DirectShow
 		/// </summary>
 		HRESULT ConfigureSampleGrabber(IBaseFilter *pIBaseFilter);
+
+		HRESULT SetCaptureFormat(IBaseFilter* pCap, int width, int height);
 	};
 
 	// Forward declarations of callbacks

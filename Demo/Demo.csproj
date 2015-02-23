@@ -125,10 +125,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WebCamLib\WebCamLib.vcxproj">
-      <Project>{FD48314A-9615-4BA6-913A-03787FB2DD30}</Project>
-      <Name>WebCamLib</Name>
-    </ProjectReference>
     <ProjectReference Include="..\WebCamWrapper\WebCamWrapper.csproj">
       <Project>{CC5D5149-0092-4508-AC34-2ABE1468A1C9}</Project>
       <Name>WebCamWrapper</Name>

@@ -192,6 +192,11 @@ namespace Touchless.Vision.Camera
             _cameraMethods.GetCameraInfo(_index);
         }
 
+        public void SetProperty(int property, int value, bool auto) // bntr
+        {
+            _cameraMethods.SetProperty(property, value, auto);
+        }
+
         /// <summary>
         /// Event fired when an image from the camera is captured
         /// </summary>
@@ -241,9 +246,10 @@ private void CaptureCallbackProc(int dataSize, byte[] data)
     scan0 += (_height - 1) * stride;
     var b = new Bitmap(_width, _height, -stride, PixelFormat.Format24bppRgb, (IntPtr)scan0);
     b.RotateFlip(_rotateFlip);
+    // NOTE: It seems that bntr has made that resolution property work properly
+    var copyBitmap = (Bitmap)b.Clone();
     // Copy the image using the Thumbnail function to also resize if needed
-    var copyBitmap = (Bitmap)b.GetThumbnailImage(_width, _height, null, IntPtr.Zero);
-    //var copyBitmap = (Bitmap)b.Clone();
+    //var copyBitmap = (Bitmap)b.GetThumbnailImage(_width, _height, null, IntPtr.Zero);
 
     // Now you can free the handle
     handle.Free();

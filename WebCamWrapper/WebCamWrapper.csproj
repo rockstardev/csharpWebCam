@@ -94,7 +94,8 @@
     <Reference Include="UIAutomationProvider">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
-    <Reference Include="WebCamLib">
+    <Reference Include="WebCamLib, Version=0.0.0.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\WebCamLib\bin\Debug\WebCamLib.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase">

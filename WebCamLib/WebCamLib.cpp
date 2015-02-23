@@ -46,6 +46,27 @@ IBaseFilter* g_pIBaseFilterNullRenderer = NULL;
 CameraInfoStruct g_aCameraInfo[MAX_CAMERAS] = {0};
 
 
+// http://social.msdn.microsoft.com/Forums/sk/windowsdirectshowdevelopment/thread/052d6a15-f092-4913-b52d-d28f9a51e3b6
+void MyFreeMediaType(AM_MEDIA_TYPE& mt) {
+    if (mt.cbFormat != 0) {
+        CoTaskMemFree((PVOID)mt.pbFormat);
+        mt.cbFormat = 0;
+        mt.pbFormat = NULL;
+    }
+    if (mt.pUnk != NULL) {
+        // Unecessary because pUnk should not be used, but safest.
+        mt.pUnk->Release();
+        mt.pUnk = NULL;
+    }
+}
+void MyDeleteMediaType(AM_MEDIA_TYPE *pmt) {
+    if (pmt != NULL) {
+        MyFreeMediaType(*pmt); // See FreeMediaType for the implementation.
+        CoTaskMemFree(pmt);
+    }
+}
+
+
 /// <summary>
 /// Initializes information about all web cams connected to machine
 /// </summary>
@@ -243,6 +264,11 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 		hr = g_pGraphBuilder->AddFilter(g_pIBaseFilterCam, L"WebCam");
 	}
 
+	// Set the resolution
+    if (SUCCEEDED(hr)) {
+		hr = SetCaptureFormat(g_pIBaseFilterCam, *width, *height);
+	}
+
 	// Create a SampleGrabber
 	if (SUCCEEDED(hr))
 	{
@@ -255,6 +281,7 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 		hr = ConfigureSampleGrabber(g_pIBaseFilterSampleGrabber);
 	}
 
+	
 	// Add Sample Grabber to the filter graph
 	if (SUCCEEDED(hr))
 	{
@@ -354,6 +381,30 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 		this->activeCameraIndex = camIndex;
 	else
 		throw gcnew COMException("Error Starting Camera", hr);
+}
+
+void CameraMethods::SetProperty(long lProperty, long lValue, bool bAuto)
+{
+	if (g_pIBaseFilterCam == NULL) throw gcnew ArgumentException("No Camera started"); 
+
+    HRESULT hr = S_OK;
+
+	// Query the capture filter for the IAMVideoProcAmp interface.
+	IAMVideoProcAmp *pProcAmp = 0;
+	hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
+
+	// Get the range and default value.
+    long Min, Max, Step, Default, Flags;
+	if (SUCCEEDED(hr)) {
+	   hr = pProcAmp->GetRange(lProperty, &Min, &Max, &Step, &Default, &Flags);
+	}
+
+	if (SUCCEEDED(hr)) {
+		lValue = Min + (Max - Min) * lValue / 100;
+		hr = pProcAmp->Set(lProperty, lValue, bAuto ? VideoProcAmp_Flags_Auto : VideoProcAmp_Flags_Manual);
+	}
+
+	if (!SUCCEEDED(hr)) throw gcnew COMException("Error Set Property", hr);
 }
 
 /// <summary>
@@ -554,6 +605,68 @@ HRESULT CameraMethods::ConfigureSampleGrabber(IBaseFilter *pIBaseFilter)
 		pGrabber->Release();
 		pGrabber = NULL;
 	}
+
+	return hr;
+}
+
+
+
+// based on http://stackoverflow.com/questions/7383372/cant-make-iamstreamconfig-setformat-to-work-with-lifecam-studio
+HRESULT CameraMethods::SetCaptureFormat(IBaseFilter* pCap, int width, int height)
+{
+    HRESULT hr = S_OK;
+
+    IAMStreamConfig *pConfig = NULL;
+    hr = g_pCaptureGraphBuilder->FindInterface(
+        &PIN_CATEGORY_CAPTURE,
+		&MEDIATYPE_Video, 
+        pCap, // Pointer to the capture filter.
+        IID_IAMStreamConfig, (void**)&pConfig);
+    if (!SUCCEEDED(hr)) return hr;
+
+    int iCount = 0, iSize = 0;
+    hr = pConfig->GetNumberOfCapabilities(&iCount, &iSize);
+	if (!SUCCEEDED(hr)) return hr;
+
+    // Check the size to make sure we pass in the correct structure.
+    if (iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
+	{
+        // Use the video capabilities structure.
+        for (int iFormat = 0; iFormat < iCount; iFormat++)
+        {
+            VIDEO_STREAM_CONFIG_CAPS scc;
+            AM_MEDIA_TYPE *pmt;
+            /* Note:  Use of the VIDEO_STREAM_CONFIG_CAPS structure to configure a video device is 
+            deprecated. Although the caller must allocate the buffer, it should ignore the 
+            contents after the method returns. The capture device will return its supported 
+            formats through the pmt parameter. */
+            hr = pConfig->GetStreamCaps(iFormat, &pmt, (BYTE*)&scc);
+            if (SUCCEEDED(hr))
+            {
+                /* Examine the format, and possibly use it. */
+                if (pmt->formattype == FORMAT_VideoInfo) {
+                    // Check the buffer size.
+                    if (pmt->cbFormat >= sizeof(VIDEOINFOHEADER))
+                    {
+                        VIDEOINFOHEADER *pVih =  reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
+                        BITMAPINFOHEADER *bmiHeader = &pVih->bmiHeader;
+
+                        /* Access VIDEOINFOHEADER members through pVih. */
+                        if( bmiHeader->biWidth == width && bmiHeader->biHeight == height && 
+                            bmiHeader->biBitCount == 24)
+                        {
+                            hr = pConfig->SetFormat(pmt);
+
+							MyDeleteMediaType(pmt); break;
+                        }
+                    }
+                }
+
+                // Delete the media type when you are done.
+                MyDeleteMediaType(pmt);
+            }
+        }
+    }
 
 	return hr;
 }
