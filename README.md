@@ -4,3 +4,8 @@ This repository holds source code for [Versatile WebCam C# library](http://www.c
 http://www.codeproject.com/Articles/125478/Versatile-WebCam-C-library
 
 All future code revisions will be done here so that everyone can participate and benefit.
+
+I've retained compatibility with Visual Studio 2010 and please do the same in your pull requests. 
+If you don't have VS2010 installed on your machine, to build C++ project you may need to [install Visual C++ 2010 Express](http://www.visualstudio.com/downloads/download-visual-studio-vs#DownloadFamilies_4) from this link:
+
+http://www.visualstudio.com/downloads/download-visual-studio-vs#DownloadFamilies_4
