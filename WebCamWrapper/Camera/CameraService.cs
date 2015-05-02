@@ -31,7 +31,7 @@ namespace Touchless.Vision.Camera
         }
 
         private static List<Camera> _availableCameras;
-        public static IEnumerable<Camera> AvailableCameras
+        public static IList<Camera> AvailableCameras
         {
             get
             {
