@@ -10,6 +10,7 @@
 #pragma once
 
 using namespace System;
+using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
 
 namespace WebCamLib
@@ -56,13 +57,36 @@ namespace WebCamLib
 		/// <summary>
 		/// Start the camera associated with the input handle
 		/// </summary>
-		void StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height);
+		void StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp);
 
 		/// <summary>
 		/// Set VideoProcAmpProperty
 		/// </summary>
 		/// <param name="lValue">The control value. Valid range: [0, 100]</param>
 		void SetProperty(long lProperty, long lValue, bool bAuto);
+
+		/// <summary>
+		/// Determines if the given property is supported.
+		/// </summary>
+		void IsCameraControlPropertySupported(long lProperty, interior_ptr<bool> result);
+
+		/// <summary>
+		/// Set CameraControlProperty value.
+		/// </summary>
+		/// <param name="lValue">The control value. Valid range: [0, 100]</param>
+		void SetCamaraControlProperty(long lProperty, long lValue, bool bAuto, interior_ptr<bool> successful);
+
+		/// <summary>
+		/// Retrieves the current CameraControlProperty value.
+		/// </summary>
+		void GetCameraControlProperty(long lProperty, interior_ptr<long> lValue, interior_ptr<bool> bAuto, interior_ptr<bool> successful);
+
+		/// <summary>
+		/// Retrieves the CameraControlProperty value range.
+		/// </summary>
+		void GetCameraControlPropertyRange(long lProperty, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful);
+
+		void GetCaptureSizes(int index, List<Tuple<int,int,int>^> ^ sizes);
 
 		/// <summary>
 		/// Stops the currently running camera and cleans up any global resources
@@ -106,6 +130,11 @@ namespace WebCamLib
 		/// </summary>
 		!CameraMethods();
 
+		/// <summary>
+		/// Retrieves the CameraControlProperty value range for the given interface.
+		/// </summary>
+		HRESULT GetCameraControlPropertyRange(IAMCameraControl * pProcAmp, long lProperty, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<long> captureFlags);
+
 	private:
 		/// <summary>
 		/// Pinned pointer to delegate for CaptureCallbackDelegate
@@ -138,7 +167,7 @@ namespace WebCamLib
 		/// </summary>
 		HRESULT ConfigureSampleGrabber(IBaseFilter *pIBaseFilter);
 
-		HRESULT SetCaptureFormat(IBaseFilter* pCap, int width, int height);
+		HRESULT SetCaptureFormat(IBaseFilter* pCap, int width, int height, int bpp );
 	};
 
 	// Forward declarations of callbacks

@@ -188,7 +188,7 @@ CameraInfo^ CameraMethods::GetCameraInfo(int camIndex)
 /// <summary>
 /// Start the camera associated with the input handle
 /// </summary>
-void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height)
+void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp)
 {
 	if (camIndex >= Count)
 		throw gcnew ArgumentException("Camera index is out of bounds: " + Count.ToString());
@@ -266,7 +266,7 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 
 	// Set the resolution
     if (SUCCEEDED(hr)) {
-		hr = SetCaptureFormat(g_pIBaseFilterCam, *width, *height);
+		hr = SetCaptureFormat(g_pIBaseFilterCam, *width, *height, *bpp);
 	}
 
 	// Create a SampleGrabber
@@ -324,6 +324,7 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 					pVih = (VIDEOINFOHEADER*)mt.pbFormat;
 					*width = pVih->bmiHeader.biWidth;
 					*height = pVih->bmiHeader.biHeight;
+					*bpp = pVih->bmiHeader.biBitCount;
 				}
 				else
 				{
@@ -404,6 +405,103 @@ void CameraMethods::SetProperty(long lProperty, long lValue, bool bAuto)
 	}
 
 	if (!SUCCEEDED(hr)) throw gcnew COMException("Error Set Property", hr);
+}
+
+void CameraMethods::IsCameraControlPropertySupported(long lProperty, interior_ptr<bool> result)
+{
+	IAMCameraControl *pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&pProcAmp);
+
+	if(SUCCEEDED(hr))
+	{
+		long value, captureFlags;
+		hr = pProcAmp->Get(lProperty, &value, &captureFlags);
+
+		*result = SUCCEEDED(hr);
+	}
+	else
+		throw gcnew InvalidOperationException( "Unable to determine if the property is supported." );
+}
+
+void CameraMethods::GetCameraControlProperty(long lProperty, interior_ptr<long> lValue, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+{
+	IAMCameraControl *pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&pProcAmp);
+
+	if(SUCCEEDED(hr))
+	{
+		long value, captureFlags;
+		hr = pProcAmp->Get(lProperty, &value, &captureFlags);
+
+		if(SUCCEEDED(hr))
+		{
+			*lValue = value;
+			*bAuto = captureFlags == CameraControl_Flags_Auto;
+		}
+	}
+
+	*successful = SUCCEEDED(hr);
+}
+
+void CameraMethods::GetCameraControlPropertyRange(long lProperty, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+{
+	IAMCameraControl *pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&pProcAmp);
+
+	if(SUCCEEDED(hr))
+	{
+		long captureFlags;
+		hr = GetCameraControlPropertyRange(pProcAmp, lProperty, min, max, steppingDelta, defaults, &captureFlags);
+
+		if(SUCCEEDED(hr))
+			*bAuto = captureFlags == CameraControl_Flags_Auto;
+	}
+
+	*successful = SUCCEEDED(hr);
+}
+
+HRESULT CameraMethods::GetCameraControlPropertyRange(IAMCameraControl * pProcAmp, long lProperty, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<long> captureFlags)
+{
+	long minimum, maximum, step, default_value, flags;
+
+	HRESULT result = pProcAmp->GetRange(lProperty, &minimum, &maximum, &step, &default_value, &flags);
+
+	if( SUCCEEDED( result ) )
+	{
+		*min = minimum;
+		*max = maximum;
+		*steppingDelta = step;
+		*defaults = default_value;
+		*captureFlags = flags;
+	}
+
+	return result;
+}
+
+void CameraMethods::SetCamaraControlProperty(long lProperty, long lValue, bool bAuto, interior_ptr<bool> successful)
+{
+	if (g_pIBaseFilterCam == NULL) throw gcnew ArgumentException("No Camera started"); 
+
+	HRESULT hr = S_OK;
+
+	// Query the capture filter for the IAMVideoProcAmp interface.
+	IAMCameraControl *pProcAmp = NULL;
+	hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&pProcAmp);
+
+	// Get the range and default value.
+	long Min, Max, Step, Default, Flags;
+	if (SUCCEEDED(hr)) {
+		hr = GetCameraControlPropertyRange(pProcAmp, lProperty, &Min, &Max, &Step, &Default, &Flags);
+	}
+
+	if (SUCCEEDED(hr)) {
+		lValue = Min + (Max - Min) * lValue / 100;
+		hr = pProcAmp->Set(lProperty, lValue, bAuto ? CameraControl_Flags_Auto : CameraControl_Flags_Manual);
+	}
+
+	if (!SUCCEEDED(hr)) throw gcnew COMException("Error Camera Control Set Property", hr);
+
+	*successful = SUCCEEDED(hr);
 }
 
 /// <summary>
@@ -608,10 +706,99 @@ HRESULT CameraMethods::ConfigureSampleGrabber(IBaseFilter *pIBaseFilter)
 	return hr;
 }
 
+void CameraMethods::GetCaptureSizes(int index, List<Tuple<int,int,int>^> ^ sizes)
+{
+	sizes->Clear();
 
+	HRESULT hr = S_OK;
 
+	if (index >= Count)
+		throw gcnew ArgumentException("Camera index is out of bounds: " + Count.ToString());
+
+	if (g_aCameraInfo[index].pMoniker == NULL)
+		throw gcnew ArgumentException("There is no camera at index: " + index.ToString());
+
+	if (g_pGraphBuilder != NULL)
+		throw gcnew ArgumentException("Graph Builder was null");
+
+	IMoniker *pMoniker = g_aCameraInfo[index].pMoniker;
+	pMoniker->AddRef();
+
+	IBaseFilter* pCap = NULL;
+	// Build the camera from the moniker
+	if (SUCCEEDED(hr))
+		hr = pMoniker->BindToObject(NULL, NULL, IID_IBaseFilter, (LPVOID*)&pCap);
+
+	ICaptureGraphBuilder2* captureGraphBuilder = NULL;
+	if (SUCCEEDED(hr))
+	{
+		hr = CoCreateInstance(CLSID_CaptureGraphBuilder2,
+			NULL,
+			CLSCTX_INPROC,
+			IID_ICaptureGraphBuilder2,
+			(LPVOID*)&captureGraphBuilder);
+	}
+
+	IAMStreamConfig *pConfig = NULL;
+	if(SUCCEEDED(hr))
+		hr = captureGraphBuilder->FindInterface(
+		&PIN_CATEGORY_CAPTURE,
+		&MEDIATYPE_Video, 
+		pCap, // Pointer to the capture filter.
+		IID_IAMStreamConfig, (void**)&pConfig);
+
+	int iCount = 0, iSize = 0;
+	if(SUCCEEDED(hr))
+		hr = pConfig->GetNumberOfCapabilities(&iCount, &iSize);
+
+	// Check the size to make sure we pass in the correct structure.
+	if (SUCCEEDED(hr) && iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
+	{
+		// Use the video capabilities structure.
+		for (int iFormat = 0; iFormat < iCount; iFormat++)
+		{
+			VIDEO_STREAM_CONFIG_CAPS scc;
+			AM_MEDIA_TYPE *pmt;
+			/* Note:  Use of the VIDEO_STREAM_CONFIG_CAPS structure to configure a video device is 
+			deprecated. Although the caller must allocate the buffer, it should ignore the 
+			contents after the method returns. The capture device will return its supported 
+			formats through the pmt parameter. */
+			hr = pConfig->GetStreamCaps(iFormat, &pmt, (BYTE*)&scc);
+			if (SUCCEEDED(hr))
+			{
+				/* Examine the format, and possibly use it. */
+				if (pmt->formattype == FORMAT_VideoInfo) {
+					// Check the buffer size.
+					if (pmt->cbFormat >= sizeof(VIDEOINFOHEADER))
+					{
+						VIDEOINFOHEADER *pVih =  reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
+						BITMAPINFOHEADER *bmiHeader = &pVih->bmiHeader;
+
+						int width = bmiHeader->biWidth;
+						int height = bmiHeader->biHeight;
+						int bitCount = bmiHeader->biBitCount;
+
+						sizes->Add( gcnew Tuple<int,int,int>( width, height, bitCount ) );
+					}
+				}
+
+				// Delete the media type when you are done.
+				MyDeleteMediaType(pmt);
+			}
+		}
+	}
+
+	// Cleanup
+	if (pMoniker != NULL)
+	{
+		pMoniker->Release();
+		pMoniker = NULL;
+	}
+}
+
+// If bpp is -1, the first format matching the width and height is selected.
 // based on http://stackoverflow.com/questions/7383372/cant-make-iamstreamconfig-setformat-to-work-with-lifecam-studio
-HRESULT CameraMethods::SetCaptureFormat(IBaseFilter* pCap, int width, int height)
+HRESULT CameraMethods::SetCaptureFormat(IBaseFilter* pCap, int width, int height, int bpp)
 {
     HRESULT hr = S_OK;
 
@@ -651,8 +838,7 @@ HRESULT CameraMethods::SetCaptureFormat(IBaseFilter* pCap, int width, int height
                         BITMAPINFOHEADER *bmiHeader = &pVih->bmiHeader;
 
                         /* Access VIDEOINFOHEADER members through pVih. */
-                        if( bmiHeader->biWidth == width && bmiHeader->biHeight == height && 
-                            bmiHeader->biBitCount == 24)
+                        if( bmiHeader->biWidth == width && bmiHeader->biHeight == height && ( bmiHeader->biBitCount == -1 || bmiHeader->biBitCount == bpp) )
                         {
                             hr = pConfig->SetFormat(pmt);
 
