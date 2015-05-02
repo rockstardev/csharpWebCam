@@ -22,7 +22,7 @@ namespace Touchless.Vision.Contracts
             {
                 if (_image == null)
                 {
-                    _image = OriginalImage.Clone() as Bitmap;
+                    _image = new Bitmap( OriginalImage );
                 }
 
                 return _image;
@@ -33,7 +33,7 @@ namespace Touchless.Vision.Contracts
         public Frame(Bitmap originalImage)
         {
             Id = NextId();
-            OriginalImage = originalImage;
+            OriginalImage = new Bitmap( originalImage );
         }
 
         [DataMember]
@@ -44,13 +44,12 @@ namespace Touchless.Vision.Contracts
                 byte[] data = null;
 
                 if (Image != null)
-                {
-                    var memoryStream = new MemoryStream();
-                    Image.Save(memoryStream, ImageFormat.Png);
-                    memoryStream.Flush();
-                    data = memoryStream.ToArray();
-                    memoryStream.Close();
-                }
+                   using( MemoryStream memoryStream = new MemoryStream() )
+                   {
+                      Image.Save( memoryStream, ImageFormat.Png );
+                      memoryStream.Flush();
+                      data = memoryStream.ToArray();
+                   }
 
                 return data;
             }
