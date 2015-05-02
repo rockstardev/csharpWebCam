@@ -61,6 +61,7 @@ namespace WebCamLib
 		/// <summary>
 		/// Set VideoProcAmpProperty
 		/// </summary>
+		/// <param name="lValue">The control value. Valid range: [0, 100]</param>
 		void SetProperty(long lProperty, long lValue, bool bAuto);
 
 		/// <summary>

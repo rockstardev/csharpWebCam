@@ -139,7 +139,7 @@ void CameraMethods::RefreshCameraList()
 			g_aCameraInfo[count].pMoniker->AddRef();
 
 			IPropertyBag *pPropBag;
-			hr = apIMoniker[0]->BindToStorage(0, 0, IID_IPropertyBag, (void **)&pPropBag);
+			hr = apIMoniker[0]->BindToStorage(NULL, NULL, IID_IPropertyBag, (void **)&pPropBag);
 			if (SUCCEEDED(hr))
 			{
 				// Retrieve the filter's friendly name
@@ -281,7 +281,6 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 		hr = ConfigureSampleGrabber(g_pIBaseFilterSampleGrabber);
 	}
 
-	
 	// Add Sample Grabber to the filter graph
 	if (SUCCEEDED(hr))
 	{
@@ -657,7 +656,7 @@ HRESULT CameraMethods::SetCaptureFormat(IBaseFilter* pCap, int width, int height
                         {
                             hr = pConfig->SetFormat(pmt);
 
-							MyDeleteMediaType(pmt); break;
+                            break;
                         }
                     }
                 }
