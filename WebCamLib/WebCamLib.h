@@ -21,8 +21,23 @@ namespace WebCamLib
 	public ref class CameraInfo
 	{
 	public:
-		property int index;
-		property String^ name;
+		CameraInfo( int index, String^ name );
+
+		property int Index
+		{
+			int get();
+		private: void set( int value );
+		}
+
+		property String^ Name
+		{
+			String^ get();
+		private: void set( String^ value );
+		}
+
+	private:
+		int index;
+		String^ name;
 	};
 
 	/// <summary>

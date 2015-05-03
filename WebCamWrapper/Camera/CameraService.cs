@@ -49,7 +49,7 @@ namespace Touchless.Vision.Camera
             for (int i = 0; i < CameraMethods.Count; i++)
             {
                 WebCamLib.CameraInfo cameraInfo = CameraMethods.GetCameraInfo(i);
-                yield return new Camera(CameraMethods, cameraInfo.name, cameraInfo.index);
+                yield return new Camera(CameraMethods, cameraInfo.Name, cameraInfo.Index);
             }
         }
     }

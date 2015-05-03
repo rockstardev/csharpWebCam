@@ -27,6 +27,36 @@ using namespace WebCamLib;
 // Private variables
 #define MAX_CAMERAS 10
 
+#pragma region CameraInfo Items
+CameraInfo::CameraInfo( int index, String^ name )
+{
+   Index = index;
+   Name = name;
+}
+
+int CameraInfo::Index::get()
+{
+   return index;
+}
+
+void CameraInfo::Index::set( int value )
+{
+   index = value;
+}
+
+String^ CameraInfo::Name::get()
+{
+   return name;
+}
+
+void CameraInfo::Name::set( String^ value )
+{
+   if( value != nullptr )
+      name = value;
+   else
+      throw gcnew ArgumentNullException( "Name cannot be null." );
+}
+#pragma endregion
 
 // Structure to hold camera information
 struct CameraInfoStruct
@@ -174,14 +204,13 @@ void CameraMethods::RefreshCameraList()
 CameraInfo^ CameraMethods::GetCameraInfo(int camIndex)
 {
 	if (camIndex >= Count)
-		throw gcnew ArgumentException("Camera index is out of bounds: " + Count.ToString());
+		throw gcnew ArgumentOutOfRangeException("Camera index is out of bounds: " + Count.ToString());
 
 	if (g_aCameraInfo[camIndex].pMoniker == NULL)
 		throw gcnew ArgumentException("There is no camera at index: " + camIndex.ToString());
 
-	CameraInfo^ camInfo = gcnew CameraInfo();
-	camInfo->index = camIndex;
-	camInfo->name = Marshal::PtrToStringBSTR((IntPtr)g_aCameraInfo[camIndex].bstrName);
+	CameraInfo^ camInfo = gcnew CameraInfo( camIndex, Marshal::PtrToStringBSTR((IntPtr)g_aCameraInfo[camIndex].bstrName) );
+
 	return camInfo;
 }
 
