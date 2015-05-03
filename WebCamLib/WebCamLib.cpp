@@ -30,31 +30,31 @@ using namespace WebCamLib;
 #pragma region CameraInfo Items
 CameraInfo::CameraInfo( int index, String^ name )
 {
-   Index = index;
-   Name = name;
+	Index = index;
+	Name = name;
 }
 
 int CameraInfo::Index::get()
 {
-   return index;
+	return index;
 }
 
 void CameraInfo::Index::set( int value )
 {
-   index = value;
+	index = value;
 }
 
 String^ CameraInfo::Name::get()
 {
-   return name;
+	return name;
 }
 
 void CameraInfo::Name::set( String^ value )
 {
-   if( value != nullptr )
-      name = value;
-   else
-      throw gcnew ArgumentNullException( "Name cannot be null." );
+	if( value != nullptr )
+		name = value;
+	else
+		throw gcnew ArgumentNullException( "Name cannot be null." );
 }
 #pragma endregion
 
@@ -78,22 +78,22 @@ CameraInfoStruct g_aCameraInfo[MAX_CAMERAS] = {0};
 
 // http://social.msdn.microsoft.com/Forums/sk/windowsdirectshowdevelopment/thread/052d6a15-f092-4913-b52d-d28f9a51e3b6
 void MyFreeMediaType(AM_MEDIA_TYPE& mt) {
-    if (mt.cbFormat != 0) {
-        CoTaskMemFree((PVOID)mt.pbFormat);
-        mt.cbFormat = 0;
-        mt.pbFormat = NULL;
-    }
-    if (mt.pUnk != NULL) {
-        // Unecessary because pUnk should not be used, but safest.
-        mt.pUnk->Release();
-        mt.pUnk = NULL;
-    }
+	if (mt.cbFormat != 0) {
+		CoTaskMemFree((PVOID)mt.pbFormat);
+		mt.cbFormat = 0;
+		mt.pbFormat = NULL;
+	}
+	if (mt.pUnk != NULL) {
+		// Unecessary because pUnk should not be used, but safest.
+		mt.pUnk->Release();
+		mt.pUnk = NULL;
+	}
 }
 void MyDeleteMediaType(AM_MEDIA_TYPE *pmt) {
-    if (pmt != NULL) {
-        MyFreeMediaType(*pmt); // See FreeMediaType for the implementation.
-        CoTaskMemFree(pmt);
-    }
+	if (pmt != NULL) {
+		MyFreeMediaType(*pmt); // See FreeMediaType for the implementation.
+		CoTaskMemFree(pmt);
+	}
 }
 
 
@@ -294,7 +294,7 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 	}
 
 	// Set the resolution
-    if (SUCCEEDED(hr)) {
+	if (SUCCEEDED(hr)) {
 		hr = SetCaptureFormat(g_pIBaseFilterCam, *width, *height, *bpp);
 	}
 
@@ -416,16 +416,16 @@ void CameraMethods::SetProperty(long lProperty, long lValue, bool bAuto)
 {
 	if (g_pIBaseFilterCam == NULL) throw gcnew ArgumentException("No Camera started"); 
 
-    HRESULT hr = S_OK;
+	HRESULT hr = S_OK;
 
 	// Query the capture filter for the IAMVideoProcAmp interface.
 	IAMVideoProcAmp *pProcAmp = 0;
 	hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
 
 	// Get the range and default value.
-    long Min, Max, Step, Default, Flags;
+	long Min, Max, Step, Default, Flags;
 	if (SUCCEEDED(hr)) {
-	   hr = pProcAmp->GetRange(lProperty, &Min, &Max, &Step, &Default, &Flags);
+		hr = pProcAmp->GetRange(lProperty, &Min, &Max, &Step, &Default, &Flags);
 	}
 
 	if (SUCCEEDED(hr)) {
@@ -829,58 +829,58 @@ void CameraMethods::GetCaptureSizes(int index, List<Tuple<int,int,int>^> ^ sizes
 // based on http://stackoverflow.com/questions/7383372/cant-make-iamstreamconfig-setformat-to-work-with-lifecam-studio
 HRESULT CameraMethods::SetCaptureFormat(IBaseFilter* pCap, int width, int height, int bpp)
 {
-    HRESULT hr = S_OK;
+	HRESULT hr = S_OK;
 
-    IAMStreamConfig *pConfig = NULL;
-    hr = g_pCaptureGraphBuilder->FindInterface(
-        &PIN_CATEGORY_CAPTURE,
+	IAMStreamConfig *pConfig = NULL;
+	hr = g_pCaptureGraphBuilder->FindInterface(
+		&PIN_CATEGORY_CAPTURE,
 		&MEDIATYPE_Video, 
-        pCap, // Pointer to the capture filter.
-        IID_IAMStreamConfig, (void**)&pConfig);
-    if (!SUCCEEDED(hr)) return hr;
-
-    int iCount = 0, iSize = 0;
-    hr = pConfig->GetNumberOfCapabilities(&iCount, &iSize);
+		pCap, // Pointer to the capture filter.
+		IID_IAMStreamConfig, (void**)&pConfig);
 	if (!SUCCEEDED(hr)) return hr;
 
-    // Check the size to make sure we pass in the correct structure.
-    if (iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
+	int iCount = 0, iSize = 0;
+	hr = pConfig->GetNumberOfCapabilities(&iCount, &iSize);
+	if (!SUCCEEDED(hr)) return hr;
+
+	// Check the size to make sure we pass in the correct structure.
+	if (iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
 	{
-        // Use the video capabilities structure.
-        for (int iFormat = 0; iFormat < iCount; iFormat++)
-        {
-            VIDEO_STREAM_CONFIG_CAPS scc;
-            AM_MEDIA_TYPE *pmt;
-            /* Note:  Use of the VIDEO_STREAM_CONFIG_CAPS structure to configure a video device is 
-            deprecated. Although the caller must allocate the buffer, it should ignore the 
-            contents after the method returns. The capture device will return its supported 
-            formats through the pmt parameter. */
-            hr = pConfig->GetStreamCaps(iFormat, &pmt, (BYTE*)&scc);
-            if (SUCCEEDED(hr))
-            {
-                /* Examine the format, and possibly use it. */
-                if (pmt->formattype == FORMAT_VideoInfo) {
-                    // Check the buffer size.
-                    if (pmt->cbFormat >= sizeof(VIDEOINFOHEADER))
-                    {
-                        VIDEOINFOHEADER *pVih =  reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
-                        BITMAPINFOHEADER *bmiHeader = &pVih->bmiHeader;
+		// Use the video capabilities structure.
+		for (int iFormat = 0; iFormat < iCount; iFormat++)
+		{
+				VIDEO_STREAM_CONFIG_CAPS scc;
+				AM_MEDIA_TYPE *pmt;
+				/* Note:  Use of the VIDEO_STREAM_CONFIG_CAPS structure to configure a video device is 
+				deprecated. Although the caller must allocate the buffer, it should ignore the 
+				contents after the method returns. The capture device will return its supported 
+				formats through the pmt parameter. */
+				hr = pConfig->GetStreamCaps(iFormat, &pmt, (BYTE*)&scc);
+				if (SUCCEEDED(hr))
+				{
+					/* Examine the format, and possibly use it. */
+					if (pmt->formattype == FORMAT_VideoInfo) {
+						// Check the buffer size.
+						if (pmt->cbFormat >= sizeof(VIDEOINFOHEADER))
+						{
+								VIDEOINFOHEADER *pVih =  reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
+								BITMAPINFOHEADER *bmiHeader = &pVih->bmiHeader;
 
-                        /* Access VIDEOINFOHEADER members through pVih. */
-                        if( bmiHeader->biWidth == width && bmiHeader->biHeight == height && ( bmiHeader->biBitCount == -1 || bmiHeader->biBitCount == bpp) )
-                        {
-                            hr = pConfig->SetFormat(pmt);
+								/* Access VIDEOINFOHEADER members through pVih. */
+								if( bmiHeader->biWidth == width && bmiHeader->biHeight == height && ( bmiHeader->biBitCount == -1 || bmiHeader->biBitCount == bpp) )
+								{
+									hr = pConfig->SetFormat(pmt);
 
-                            break;
-                        }
-                    }
-                }
+									break;
+								}
+						}
+					}
 
-                // Delete the media type when you are done.
-                MyDeleteMediaType(pmt);
-            }
-        }
-    }
+					// Delete the media type when you are done.
+					MyDeleteMediaType(pmt);
+				}
+		}
+	}
 
 	return hr;
 }
