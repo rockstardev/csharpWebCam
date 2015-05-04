@@ -1,0 +1,5 @@
+WebCamLib:
+- GetCaptureSizes: Convert List<Tuple<int,int,int>^> ^ -> IList<Tuple<int,int,int>^> ^
+- Try moving the global (module) storage variables in the class instance.
+- Tackle the warnings.
+- Consider adding an #ifndef guard.
