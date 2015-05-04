@@ -156,7 +156,7 @@ namespace WebCamLib
 		bool GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto);
 		#pragma endregion
 
-		void GetCaptureSizes(int index, List<Tuple<int,int,int>^> ^ sizes);
+		void GetCaptureSizes(int index, IList<Tuple<int,int,int>^> ^ sizes);
 
 		/// <summary>
 		/// Stops the currently running camera and cleans up any global resources

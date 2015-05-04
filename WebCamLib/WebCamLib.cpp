@@ -969,7 +969,7 @@ HRESULT CameraMethods::ConfigureSampleGrabber(IBaseFilter *pIBaseFilter)
 	return hr;
 }
 
-void CameraMethods::GetCaptureSizes(int index, List<Tuple<int,int,int>^> ^ sizes)
+void CameraMethods::GetCaptureSizes(int index, IList<Tuple<int,int,int>^> ^ sizes)
 {
 	sizes->Clear();
 

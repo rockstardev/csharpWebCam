@@ -613,7 +613,7 @@ namespace Touchless.Vision.Camera
 
       public IList<CaptureSize> GetCaptureSizes()
       {
-         List<Tuple<int, int, int>> rawSizes = new List<Tuple<int, int, int>>();
+         IList<Tuple<int, int, int>> rawSizes = new List<Tuple<int, int, int>>();
 
          lock( CameraMethodsLock )
          {
