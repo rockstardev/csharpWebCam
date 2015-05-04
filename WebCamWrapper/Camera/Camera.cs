@@ -7,23 +7,33 @@ using WebCamLib;
 
 namespace Touchless.Vision.Camera
 {
-   // Source: https://msdn.microsoft.com/en-us/library/aa925325.aspx
-   public enum CameraControlProperty : int
+   public enum CameraProperty : int
    {
-      Pan_degrees,
-      Tilt_degrees,
-      Roll_degrees,
-      Zoom_mm,
-      Exposure_lgSec,
-      Iris_10f,
-      Focus_mm,
-      Flash,
-   };
+      Pan_degrees = WebCamLib.CameraProperty.Pan_degrees,
+      Tilt_degrees = WebCamLib.CameraProperty.Tilt_degrees,
+      Roll_degrees = WebCamLib.CameraProperty.Roll_degrees,
+      Zoom_mm = WebCamLib.CameraProperty.Zoom_mm,
+      Exposure_lgSec = WebCamLib.CameraProperty.Exposure_lgSec,
+      Iris_10f = WebCamLib.CameraProperty.Iris_10f,
+      Focus_mm = WebCamLib.CameraProperty.Focus_mm,
+      Flash = WebCamLib.CameraProperty.Flash,
+      Brightness = WebCamLib.CameraProperty.Brightness,
+      Contrast = WebCamLib.CameraProperty.Brightness,
+      Hue = WebCamLib.CameraProperty.Contrast,
+      Saturation = WebCamLib.CameraProperty.Saturation,
+      Sharpness = WebCamLib.CameraProperty.Sharpness,
+      Gamma = WebCamLib.CameraProperty.Gamma,
+      ColorEnable = WebCamLib.CameraProperty.ColorEnable,
+      WhiteBalance = WebCamLib.CameraProperty.WhiteBalance,
+      BacklightCompensation = WebCamLib.CameraProperty.BacklightCompensation,
+      Gain = WebCamLib.CameraProperty.Gain,
+   }
 
-   public sealed class CameraControlPropertyValue
+   public sealed class CameraPropertyValue
    {
-      public CameraControlPropertyValue( int value, bool isAuto )
+      public CameraPropertyValue( bool isPercentageValue, int value, bool isAuto )
       {
+         IsPercentageValue = isPercentageValue;
          Value = value;
          IsAuto = isAuto;
       }
@@ -47,11 +57,25 @@ namespace Touchless.Vision.Camera
             return !IsAuto;
          }
       }
+
+      public bool IsActualValue
+      {
+         get
+         {
+            return !IsPercentageValue;
+         }
+      }
+
+      public bool IsPercentageValue
+      {
+         get;
+         private set;
+      }
    }
 
-   public sealed class CameraControlPropertyRange
+   public sealed class CameraPropertyRange
    {
-      public CameraControlPropertyRange( int minimum, int maximum, int step, int defaults, bool isAuto )
+      public CameraPropertyRange( int minimum, int maximum, int step, int defaults, bool isAuto )
       {
          Minimum = minimum;
          Maximum = maximum;
@@ -77,6 +101,14 @@ namespace Touchless.Vision.Camera
          get
          {
             return Maximum - Minimum;
+         }
+      }
+
+      public int DomainSize
+      {
+         get
+         {
+            return Range + 1;
          }
       }
 
@@ -431,116 +463,153 @@ namespace Touchless.Vision.Camera
          }
       }
 
-      public void SetProperty( int property, int value, bool auto ) // bntr
-      {
-         lock( CameraMethodsLock )
-         {
-            _cameraMethods.SetProperty( property, value, auto );
-         }
-      }
-
-      public bool IsCameraPropertySupported( CameraControlProperty property )
+      #region Camera Properties
+      public bool IsCameraPropertySupported( CameraProperty property )
       {
          bool result = false;
 
          lock( CameraMethodsLock )
          {
-            _cameraMethods.IsCameraControlPropertySupported( ( int ) property, ref result );
+            _cameraMethods.IsPropertySupported( ( WebCamLib.CameraProperty ) property, ref result );
          }
 
          return result;
       }
 
-      public bool SetCameraProperty( CameraControlProperty property, bool auto )
+      public bool SetCameraProperty( CameraProperty property, CameraPropertyValue value )
       {
-         return SetCameraProperty( property, 0, auto );
+         bool result;
+
+         if( value.IsActualValue )
+            result = SetCameraProperty_value( property, value.Value, value.IsAuto );
+         else // if( value.IsPercentageValue )
+            result = SetCameraProperty_percentage( property, value.Value, value.IsAuto );
+
+         return result;
+      }
+
+      public bool SetCameraProperty_value( CameraProperty property, bool auto )
+      {
+         return SetCameraProperty_value( property, 0, auto );
       }
 
       // Assume manual control
-      public bool SetCameraProperty( CameraControlProperty property, int value )
+      public bool SetCameraProperty_value( CameraProperty property, int value )
       {
-         return SetCameraProperty( property, value, false );
+         return SetCameraProperty_value( property, value, false );
       }
 
-      public bool SetCameraProperty( CameraControlProperty property, int value, bool auto )
+      public bool SetCameraProperty_value( CameraProperty property, int value, bool auto )
       {
          bool result = false;
 
          lock( CameraMethodsLock )
          {
-            _cameraMethods.SetCamaraControlProperty( ( int ) property, value, auto, ref result );
+            _cameraMethods.SetProperty_value( ( WebCamLib.CameraProperty ) property, value, auto, ref result );
          }
+
          return result;
       }
 
-      public CameraControlPropertyValue GetCameraProperty( CameraControlProperty property )
+      // Assume manual control
+      public bool SetCameraProperty_percentage( CameraProperty property, int percentage )
       {
-         CameraControlPropertyValue result;
-
-         {
-            bool successful = false;
-
-            int value = -1;
-            bool isAuto = false;
-
-            Exception inner = null;
-
-            try
-            {
-               lock( CameraMethodsLock )
-               {
-                  _cameraMethods.GetCameraControlProperty( ( int ) property, ref value, ref isAuto, ref successful );
-               }
-            }
-            catch( Exception e )
-            {
-               inner = e;
-            }
-
-            if( successful )
-               result = new CameraControlPropertyValue( value, isAuto );
-            else
-               throw new InvalidOperationException( "Unable to retrieve the CameraControlProperty value.", inner );
-         }
-
-         return result;
+         return SetCameraProperty_percentage( property, percentage, false );
       }
 
-      public CameraControlPropertyRange GetCameraPropertyRange( CameraControlProperty property )
+      public bool SetCameraProperty_percentage( CameraProperty property, int percentage, bool auto )
       {
-         CameraControlPropertyRange result;
+         bool result = false;
 
+         lock( CameraMethodsLock )
          {
-            bool successful = false;
-
-            int minimum, maximum, step, defaults;
-            bool isAuto;
-
-            minimum = maximum = step = defaults = -1;
-            isAuto = false;
-
-            Exception inner = null;
-
-            try
-            {
-               lock( CameraMethodsLock )
-               {
-                  _cameraMethods.GetCameraControlPropertyRange( ( int ) property, ref minimum, ref maximum, ref step, ref defaults, ref isAuto, ref successful );
-               }
-            }
-            catch( Exception e )
-            {
-               inner = e;
-            }
-
-            if( successful )
-               result = new CameraControlPropertyRange( minimum, maximum, step, defaults, isAuto );
-            else
-               throw new InvalidOperationException( "Unable to retrieve the CameraControlProperty range.", inner );
+            _cameraMethods.SetProperty_percentage( ( WebCamLib.CameraProperty ) property, percentage, auto, ref result );
          }
 
          return result;
       }
+
+      public CameraPropertyValue GetCameraProperty( CameraProperty property, bool isActualValue )
+      {
+         CameraPropertyValue result;
+
+         if( isActualValue )
+            result = GetCameraProperty_value( property );
+         else // is percentage value
+            result = GetCameraProperty_percentage( property );
+
+         return result;
+      }
+
+      public CameraPropertyValue GetCameraProperty_value( CameraProperty property )
+      {
+         CameraPropertyValue result;
+
+         bool successful = false;
+
+         int value = -1;
+         bool isAuto = false;
+
+         lock( CameraMethodsLock )
+         {
+            _cameraMethods.GetProperty_value( ( WebCamLib.CameraProperty ) property, ref value, ref isAuto, ref successful );
+         }
+
+         if( successful )
+            result = new CameraPropertyValue( false, value, isAuto );
+         else
+            result = null;
+
+         return result;
+      }
+
+      public CameraPropertyValue GetCameraProperty_percentage( CameraProperty property )
+      {
+         CameraPropertyValue result;
+
+         bool successful = false;
+
+         int value = -1;
+         bool isAuto = false;
+
+         lock( CameraMethodsLock )
+         {
+            _cameraMethods.GetProperty_percentage( ( WebCamLib.CameraProperty ) property, ref value, ref isAuto, ref successful );
+         }
+
+         if( successful )
+            result = new CameraPropertyValue( true, value, isAuto );
+         else
+            result = null;
+
+         return result;
+      }
+
+      public CameraPropertyRange GetCameraPropertyRange( CameraProperty property )
+      {
+         CameraPropertyRange result;
+
+         bool successful = false;
+
+         int minimum, maximum, step, defaults;
+         bool isAuto;
+
+         minimum = maximum = step = defaults = -1;
+         isAuto = false;
+
+         lock( CameraMethodsLock )
+         {
+            _cameraMethods.GetPropertyRange( ( WebCamLib.CameraProperty ) property, ref minimum, ref maximum, ref step, ref defaults, ref isAuto, ref successful );
+         }
+
+         if( successful )
+            result = new CameraPropertyRange( minimum, maximum, step, defaults, isAuto );
+         else
+            result = null;
+
+         return result;
+      }
+      #endregion
 
       public IList<CaptureSize> GetCaptureSizes()
       {

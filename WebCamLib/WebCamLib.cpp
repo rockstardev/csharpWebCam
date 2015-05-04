@@ -16,6 +16,8 @@
 
 #pragma include_alias( "dxtrans.h", "qedit.h" )
 
+#include <stdexcept>
+
 #include "qedit.h"
 #include "WebCamLib.h"
 
@@ -412,126 +414,358 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 		throw gcnew COMException("Error Starting Camera", hr);
 }
 
-void CameraMethods::SetProperty(long lProperty, long lValue, bool bAuto)
+#pragma region Camera Property Support
+void CameraMethods::IsPropertySupported( CameraProperty prop, interior_ptr<bool> result )
 {
-	if (g_pIBaseFilterCam == NULL) throw gcnew ArgumentException("No Camera started"); 
-
-	HRESULT hr = S_OK;
-
-	// Query the capture filter for the IAMVideoProcAmp interface.
-	IAMVideoProcAmp *pProcAmp = 0;
-	hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
-
-	// Get the range and default value.
-	long Min, Max, Step, Default, Flags;
-	if (SUCCEEDED(hr)) {
-		hr = pProcAmp->GetRange(lProperty, &Min, &Max, &Step, &Default, &Flags);
-	}
-
-	if (SUCCEEDED(hr)) {
-		lValue = Min + (Max - Min) * lValue / 100;
-		hr = pProcAmp->Set(lProperty, lValue, bAuto ? VideoProcAmp_Flags_Auto : VideoProcAmp_Flags_Manual);
-	}
-
-	if (!SUCCEEDED(hr)) throw gcnew COMException("Error Set Property", hr);
+	*result = IsPropertySupported( prop );
 }
 
-void CameraMethods::IsCameraControlPropertySupported(long lProperty, interior_ptr<bool> result)
+inline bool CameraMethods::IsPropertySupported( CameraProperty prop )
 {
-	IAMCameraControl *pProcAmp = NULL;
-	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&pProcAmp);
+	bool result = false;
+
+	if( IsCameraControlProperty( prop ) )
+		result = IsPropertySupported( GetCameraControlProperty( prop ) );
+	else if( IsVideoProcAmpProperty( prop ) )
+		result = IsPropertySupported( GetVideoProcAmpProperty( prop ) );
+
+	return result;
+}
+
+bool CameraMethods::IsPropertySupported( WebCamLib::CameraControlProperty prop )
+{
+	bool result = false;
+
+	IAMCameraControl * cameraControl = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&cameraControl);
 
 	if(SUCCEEDED(hr))
 	{
+		long lProperty = static_cast< long >( prop );
 		long value, captureFlags;
-		hr = pProcAmp->Get(lProperty, &value, &captureFlags);
+		hr = cameraControl->Get(lProperty, &value, &captureFlags);
 
-		*result = SUCCEEDED(hr);
+		result = SUCCEEDED(hr);
 	}
 	else
 		throw gcnew InvalidOperationException( "Unable to determine if the property is supported." );
+
+	return result;
 }
 
-void CameraMethods::GetCameraControlProperty(long lProperty, interior_ptr<long> lValue, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+bool CameraMethods::IsPropertySupported( WebCamLib::VideoProcAmpProperty prop )
 {
-	IAMCameraControl *pProcAmp = NULL;
-	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&pProcAmp);
+	bool result = false;
+
+	IAMVideoProcAmp * pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
 
 	if(SUCCEEDED(hr))
 	{
+		long lProperty = static_cast< long >( prop );
 		long value, captureFlags;
 		hr = pProcAmp->Get(lProperty, &value, &captureFlags);
 
-		if(SUCCEEDED(hr))
-		{
-			*lValue = value;
-			*bAuto = captureFlags == CameraControl_Flags_Auto;
-		}
+		result = SUCCEEDED(hr);
 	}
+	else
+		throw gcnew InvalidOperationException( "Unable to determine if the property is supported." );
 
-	*successful = SUCCEEDED(hr);
+	return result;
 }
 
-void CameraMethods::GetCameraControlPropertyRange(long lProperty, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+inline bool CameraMethods::IsCameraControlProperty( CameraProperty prop )
 {
-	IAMCameraControl *pProcAmp = NULL;
-	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&pProcAmp);
-
-	if(SUCCEEDED(hr))
-	{
-		long captureFlags;
-		hr = GetCameraControlPropertyRange(pProcAmp, lProperty, min, max, steppingDelta, defaults, &captureFlags);
-
-		if(SUCCEEDED(hr))
-			*bAuto = captureFlags == CameraControl_Flags_Auto;
-	}
-
-	*successful = SUCCEEDED(hr);
+	return IsPropertyMaskEqual( prop, PropertyTypeMask::CameraControlPropertyMask );
 }
 
-HRESULT CameraMethods::GetCameraControlPropertyRange(IAMCameraControl * pProcAmp, long lProperty, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<long> captureFlags)
+inline bool CameraMethods::IsVideoProcAmpProperty( CameraProperty prop )
 {
-	long minimum, maximum, step, default_value, flags;
+	return IsPropertyMaskEqual( prop, PropertyTypeMask::VideoProcAmpPropertyMask );
+}
 
-	HRESULT result = pProcAmp->GetRange(lProperty, &minimum, &maximum, &step, &default_value, &flags);
+inline bool CameraMethods::IsPropertyMaskEqual( CameraProperty prop, PropertyTypeMask mask )
+{
+	return ( static_cast< int >( prop ) & static_cast< int >( mask ) ) != 0;
+}
 
-	if( SUCCEEDED( result ) )
+inline WebCamLib::CameraControlProperty CameraMethods::GetCameraControlProperty( CameraProperty prop )
+{
+	if( IsCameraControlProperty( prop ) )
 	{
-		*min = minimum;
-		*max = maximum;
-		*steppingDelta = step;
-		*defaults = default_value;
-		*captureFlags = flags;
+		int value = static_cast< int >( prop );
+		int mask = static_cast< int >( PropertyTypeMask::CameraControlPropertyMask );
+		value &= ~mask;
+
+		return static_cast< WebCamLib::CameraControlProperty >( value );
+	}
+	else
+		throw gcnew OverflowException( "Property is not a camera property." );
+}
+
+inline WebCamLib::VideoProcAmpProperty CameraMethods::GetVideoProcAmpProperty( CameraProperty prop )
+{
+	if( IsVideoProcAmpProperty( prop ) )
+	{
+		int value = static_cast< int >( prop );
+		int mask = static_cast< int >( PropertyTypeMask::VideoProcAmpPropertyMask );
+		value &= ~mask;
+
+		return static_cast< WebCamLib::VideoProcAmpProperty >( value );
+	}
+	else
+		throw gcnew OverflowException( "Property is not a camera property." );
+}
+
+void CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+{
+	*successful = GetProperty_value( prop, value, bAuto );
+}
+
+bool CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto)
+{
+	bool result = false;
+
+	if( IsCameraControlProperty( prop ) )
+		result = GetProperty_value( GetCameraControlProperty( prop ), value, bAuto );
+	else if( IsVideoProcAmpProperty( prop ) )
+		result = GetProperty_value( GetVideoProcAmpProperty( prop ), value, bAuto );
+
+	return result;
+}
+
+void CameraMethods::GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+{
+	*successful = GetProperty_percentage( prop, percentage, bAuto );
+}
+
+bool CameraMethods::GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto)
+{
+	bool result;
+
+	long value;
+	if( result = GetProperty_value( prop, &value, bAuto ) )
+	{
+		long min, max, steppingDelta, defaults;
+		bool placeHolder;
+		if( result = GetPropertyRange( prop, &min, &max, &steppingDelta, &defaults, &placeHolder ) )
+			*percentage = ( ( value - min ) * 100 ) / ( max - min + 1 );
 	}
 
 	return result;
 }
 
-void CameraMethods::SetCamaraControlProperty(long lProperty, long lValue, bool bAuto, interior_ptr<bool> successful)
+void CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto, interior_ptr<bool> successful)
 {
-	if (g_pIBaseFilterCam == NULL) throw gcnew ArgumentException("No Camera started"); 
+	*successful = SetProperty_value( prop, value, bAuto );
+}
 
-	HRESULT hr = S_OK;
+bool CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto)
+{
+	bool result = false;
+
+	if( IsCameraControlProperty( prop ) )
+		result = SetProperty_value( GetCameraControlProperty( prop ), value, bAuto );
+	else if( IsVideoProcAmpProperty( prop ) )
+		result = SetProperty_value( GetVideoProcAmpProperty( prop ), value, bAuto );
+
+	return result;
+}
+
+void CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage, bool bAuto, interior_ptr<bool> successful)
+{
+	*successful = SetProperty_percentage( prop, percentage, bAuto );
+}
+
+bool CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage, bool bAuto)
+{
+	if( !IsPropertySupported( prop ) )
+		throw gcnew ArgumentException( "Property is not supported." );
+	else if( percentage >= 0 && percentage <= 100 )
+	{
+		bool result;
+
+		long min, max, steppingDelta, defaults;
+		bool placeHolder;
+		if( result = GetPropertyRange( prop, &min, &max, &steppingDelta, &defaults, &placeHolder ) )
+		{
+			long value = (max - min + 1 ) / ( percentage / 100 ) + min;
+			result = SetProperty_value( prop, value, bAuto );
+		}
+	}
+	else
+		throw gcnew ArgumentOutOfRangeException( "Percentage is not valid." );
+}
+
+void CameraMethods::GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+{
+	*successful = GetPropertyRange( prop, min, max, steppingDelta, defaults, bAuto );
+}
+
+bool CameraMethods::GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto)
+{
+	bool result = false;
+
+	if( IsCameraControlProperty( prop ) )
+		result = GetPropertyRange( GetCameraControlProperty( prop ), min, max, steppingDelta, defaults, bAuto );
+	else if( IsVideoProcAmpProperty( prop ) )
+		result = GetPropertyRange( GetVideoProcAmpProperty( prop ), min, max, steppingDelta, defaults, bAuto );
+
+	return result;
+}
+
+bool CameraMethods::GetPropertyRange( WebCamLib::CameraControlProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto )
+{
+	bool result = false;
+
+	IAMCameraControl * cameraControl = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&cameraControl);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		long minimum, maximum, step, default_value, flags;
+		hr = cameraControl->GetRange( lProperty, &minimum, &maximum, &step, &default_value, &flags );
+
+		if( SUCCEEDED( hr ) )
+		{
+			*min = minimum;
+			*max = maximum;
+			*steppingDelta = step;
+			*defaults = default_value;
+			*bAuto = flags == CameraControl_Flags_Auto;
+
+			result = SUCCEEDED(hr);
+		}
+	}
+
+	return result;
+}
+
+bool CameraMethods::GetPropertyRange( WebCamLib::VideoProcAmpProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto )
+{
+	bool result = false;
+
+	IAMVideoProcAmp * pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		long minimum, maximum, step, default_value, flags;
+		hr = pProcAmp->GetRange( lProperty, &minimum, &maximum, &step, &default_value, &flags );
+
+		if( SUCCEEDED( hr ) )
+		{
+			*min = minimum;
+			*max = maximum;
+			*steppingDelta = step;
+			*defaults = default_value;
+			*bAuto = flags == CameraControl_Flags_Auto;
+
+			result = SUCCEEDED(hr);
+		}
+	}
+
+	return result;
+}
+
+bool CameraMethods::GetProperty_value( WebCamLib::CameraControlProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto )
+{
+	if( g_pIBaseFilterCam == NULL )
+		throw gcnew InvalidOperationException( "No camera started." ); 
+
+	bool result = false;
+
+	IAMCameraControl * cameraControl = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&cameraControl);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		long lValue, captureFlags;
+		hr = cameraControl->Get(lProperty, &lValue, &captureFlags);
+
+		if( result = SUCCEEDED( hr ) )
+		{
+			*value = lValue;
+			*bAuto = captureFlags == CameraControl_Flags_Auto;
+		}
+	}
+
+	return result;
+}
+
+bool CameraMethods::GetProperty_value( WebCamLib::VideoProcAmpProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto )
+{
+	if( g_pIBaseFilterCam == NULL )
+		throw gcnew InvalidOperationException( "No camera started." ); 
+
+	bool result = false;
+
+	IAMVideoProcAmp * pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		long lValue, captureFlags;
+		hr = pProcAmp->Get(lProperty, &lValue, &captureFlags);
+
+		if( result = SUCCEEDED( hr ) )
+		{
+			*value = lValue;
+			*bAuto = captureFlags == VideoProcAmp_Flags_Auto;
+		}
+	}
+
+	return result;
+}
+
+bool CameraMethods::SetProperty_value( WebCamLib::CameraControlProperty prop, long value, bool bAuto )
+{
+	if( g_pIBaseFilterCam == NULL )
+		throw gcnew InvalidOperationException( "No camera started." ); 
+
+	bool result = false;
+
+	// Query the capture filter for the IAMCameraControl interface.
+	IAMCameraControl * cameraControl = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&cameraControl);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		hr = cameraControl->Set(lProperty, value, bAuto ? CameraControl_Flags_Auto : CameraControl_Flags_Manual);
+
+		result = SUCCEEDED( hr );
+	}
+
+	return result;
+}
+
+bool CameraMethods::SetProperty_value( WebCamLib::VideoProcAmpProperty prop, long value, bool bAuto )
+{
+	if( g_pIBaseFilterCam == NULL )
+		throw gcnew InvalidOperationException( "No camera started." ); 
+
+	bool result = false;
 
 	// Query the capture filter for the IAMVideoProcAmp interface.
-	IAMCameraControl *pProcAmp = NULL;
-	hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&pProcAmp);
+	IAMVideoProcAmp * pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
 
-	// Get the range and default value.
-	long Min, Max, Step, Default, Flags;
-	if (SUCCEEDED(hr)) {
-		hr = GetCameraControlPropertyRange(pProcAmp, lProperty, &Min, &Max, &Step, &Default, &Flags);
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		hr = pProcAmp->Set(lProperty, value, bAuto ? VideoProcAmp_Flags_Auto : VideoProcAmp_Flags_Manual);
+
+		result = SUCCEEDED( hr );
 	}
 
-	if (SUCCEEDED(hr)) {
-		lValue = Min + (Max - Min) * lValue / 100;
-		hr = pProcAmp->Set(lProperty, lValue, bAuto ? CameraControl_Flags_Auto : CameraControl_Flags_Manual);
-	}
-
-	if (!SUCCEEDED(hr)) throw gcnew COMException("Error Camera Control Set Property", hr);
-
-	*successful = SUCCEEDED(hr);
+	return result;
 }
+#pragma endregion
 
 /// <summary>
 /// Closes any open webcam and releases all unmanaged resources
