@@ -50,8 +50,7 @@ namespace Touchless.Vision.Camera
             if (!IsCapturing && this.Camera != null)
             {
                 this.Camera.OnImageCaptured += OnImageCaptured;
-                this.Camera.StartCapture();
-                IsCapturing = true;
+                IsCapturing = this.Camera.StartCapture();
             }
         }
 
@@ -60,7 +59,7 @@ namespace Touchless.Vision.Camera
             if (IsCapturing)
             {
                 this.Camera.StopCapture();
-                this.Camera.OnImageCaptured += OnImageCaptured;
+                this.Camera.OnImageCaptured -= OnImageCaptured;
                 this.IsCapturing = false;
             }
         }

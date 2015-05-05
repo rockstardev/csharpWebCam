@@ -219,7 +219,15 @@ CameraInfo^ CameraMethods::GetCameraInfo(int camIndex)
 /// <summary>
 /// Start the camera associated with the input handle
 /// </summary>
-void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp)
+void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp, interior_ptr<bool> successful)
+{
+	*successful = StartCamera( camIndex, width, height, bpp );
+}
+
+/// <summary>
+/// Start the camera associated with the input handle
+/// </summary>
+bool CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp)
 {
 	if (camIndex >= Count)
 		throw gcnew ArgumentException("Camera index is out of bounds: " + Count.ToString());
@@ -247,6 +255,8 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 			}
 		}
 	}
+
+	bool result = false;
 
 	IMoniker *pMoniker = g_aCameraInfo[camIndex].pMoniker;
 	pMoniker->AddRef();
@@ -408,10 +418,10 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 		pMoniker = NULL;
 	}
 
-	if (SUCCEEDED(hr))
+	if( result = SUCCEEDED( hr ) )
 		this->activeCameraIndex = camIndex;
-	else
-		throw gcnew COMException("Error Starting Camera", hr);
+
+	return result;
 }
 
 #pragma region Camera Property Support

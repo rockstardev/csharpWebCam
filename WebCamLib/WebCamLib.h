@@ -128,7 +128,12 @@ namespace WebCamLib
 		/// <summary>
 		/// Start the camera associated with the input handle
 		/// </summary>
-		void StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp);
+		bool StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp);
+
+		/// <summary>
+		/// Start the camera associated with the input handle
+		/// </summary>
+		void StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp, interior_ptr<bool> successful);
 
 		#pragma region Camera Property Support
 		void IsPropertySupported( CameraProperty prop, interior_ptr<bool> result );

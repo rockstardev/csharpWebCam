@@ -658,12 +658,16 @@ namespace Touchless.Vision.Camera
       private int _width = 320;
       private int _bpp = 24;
 
-      internal void StartCapture()
+      internal bool StartCapture()
       {
+         bool result = false;
+
          lock( CameraMethodsLock )
          {
-            _cameraMethods.StartCamera( _index, ref _width, ref _height, ref _bpp );
+            _cameraMethods.StartCamera( _index, ref _width, ref _height, ref _bpp, ref result );
          }
+
+         return result;
       }
 
       internal void StopCapture()
