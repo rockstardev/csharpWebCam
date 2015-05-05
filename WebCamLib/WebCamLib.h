@@ -140,25 +140,33 @@ namespace WebCamLib
 
 		bool IsPropertySupported( CameraProperty prop );
 
-		void GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful);
+		void GetProperty( CameraProperty prop, bool isValue, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful );
 
-		bool GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto);
+		bool GetProperty( CameraProperty prop, bool isValue, interior_ptr<long> value, interior_ptr<bool> bAuto );
+
+		void GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful );
+
+		bool GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto );
 
 		void GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto, interior_ptr<bool> successful);
 
-		bool GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto);
+		bool GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto );
 
-		void SetProperty_value(CameraProperty prop, long value, bool bAuto, interior_ptr<bool> successful);
+		void SetProperty( CameraProperty prop, bool isValue, long value, bool bAuto, interior_ptr<bool> successful );
 
-		bool SetProperty_value(CameraProperty prop, long value, bool bAuto);
+		bool SetProperty( CameraProperty prop, bool isValue, long value, bool bAuto );
 
-		void SetProperty_percentage(CameraProperty prop, long percentage, bool bAuto, interior_ptr<bool> successful);
+		void SetProperty_value( CameraProperty prop, long value, bool bAuto, interior_ptr<bool> successful );
 
-		bool SetProperty_percentage(CameraProperty prop, long percentage, bool bAuto);
+		bool SetProperty_value( CameraProperty prop, long value, bool bAuto );
 
-		void GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful);
+		void SetProperty_percentage( CameraProperty prop, long percentage, bool bAuto, interior_ptr<bool> successful );
 
-		bool GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto);
+		bool SetProperty_percentage( CameraProperty prop, long percentage, bool bAuto );
+
+		void GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful );
+
+		bool GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto );
 		#pragma endregion
 
 		void GetCaptureSizes(int index, IList<Tuple<int,int,int>^> ^ sizes);

@@ -425,7 +425,7 @@ bool CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 }
 
 #pragma region Camera Property Support
-void CameraMethods::IsPropertySupported( CameraProperty prop, interior_ptr<bool> result )
+inline void CameraMethods::IsPropertySupported( CameraProperty prop, interior_ptr<bool> result )
 {
 	*result = IsPropertySupported( prop );
 }
@@ -499,6 +499,23 @@ inline bool CameraMethods::IsPropertyMaskEqual( CameraProperty prop, PropertyTyp
 	return ( static_cast< int >( prop ) & static_cast< int >( mask ) ) != 0;
 }
 
+inline void CameraMethods::GetProperty( CameraProperty prop, bool isValue, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful )
+{
+	*successful = GetProperty( prop, isValue, value, bAuto );
+}
+
+inline bool CameraMethods::GetProperty( CameraProperty prop, bool isValue, interior_ptr<long> value, interior_ptr<bool> bAuto )
+{
+	bool result;
+
+	if( isValue )
+		result = GetProperty_value( prop, value, bAuto );
+	else // is a percentage value
+		result = GetProperty_percentage( prop, value, bAuto );
+
+	return result;
+}
+
 inline WebCamLib::CameraControlProperty CameraMethods::GetCameraControlProperty( CameraProperty prop )
 {
 	if( IsCameraControlProperty( prop ) )
@@ -527,12 +544,12 @@ inline WebCamLib::VideoProcAmpProperty CameraMethods::GetVideoProcAmpProperty( C
 		throw gcnew OverflowException( "Property is not a camera property." );
 }
 
-void CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+inline void CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
 {
 	*successful = GetProperty_value( prop, value, bAuto );
 }
 
-bool CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto)
+inline bool CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto)
 {
 	bool result = false;
 
@@ -544,7 +561,7 @@ bool CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> v
 	return result;
 }
 
-void CameraMethods::GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+inline void CameraMethods::GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
 {
 	*successful = GetProperty_percentage( prop, percentage, bAuto );
 }
@@ -565,12 +582,29 @@ bool CameraMethods::GetProperty_percentage( CameraProperty prop, interior_ptr<lo
 	return result;
 }
 
-void CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto, interior_ptr<bool> successful)
+inline void CameraMethods::SetProperty( CameraProperty prop, bool isValue, long value, bool bAuto, interior_ptr<bool> successful )
+{
+	*successful = SetProperty( prop, isValue, value, bAuto );
+}
+
+inline bool CameraMethods::SetProperty( CameraProperty prop, bool isValue, long value, bool bAuto )
+{
+	bool result;
+
+	if( isValue )
+		result = SetProperty_value( prop, value, bAuto );
+	else  // is a percentage value
+		result = SetProperty_percentage( prop, value, bAuto );
+
+	return result;
+}
+
+inline void CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto, interior_ptr<bool> successful)
 {
 	*successful = SetProperty_value( prop, value, bAuto );
 }
 
-bool CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto)
+inline bool CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto)
 {
 	bool result = false;
 
@@ -582,7 +616,7 @@ bool CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAut
 	return result;
 }
 
-void CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage, bool bAuto, interior_ptr<bool> successful)
+inline void CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage, bool bAuto, interior_ptr<bool> successful)
 {
 	*successful = SetProperty_percentage( prop, percentage, bAuto );
 }
@@ -607,12 +641,12 @@ bool CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage,
 		throw gcnew ArgumentOutOfRangeException( "Percentage is not valid." );
 }
 
-void CameraMethods::GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+inline void CameraMethods::GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
 {
 	*successful = GetPropertyRange( prop, min, max, steppingDelta, defaults, bAuto );
 }
 
-bool CameraMethods::GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto)
+inline bool CameraMethods::GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto)
 {
 	bool result = false;
 

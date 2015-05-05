@@ -488,6 +488,30 @@ namespace Touchless.Vision.Camera
          return result;
       }
 
+      public bool SetCameraProperty( CameraProperty property, bool isActualValue, int value )
+      {
+         bool result = false;
+
+         if( isActualValue )
+            result = SetCameraProperty_value( property, value );
+         else // is percentage value
+            result = SetCameraProperty_percentage( property, value );
+
+         return result;
+      }
+
+      public bool SetCameraProperty( CameraProperty property, bool isActualValue, int value, bool auto )
+      {
+         bool result = false;
+
+         if( isActualValue )
+            result = SetCameraProperty_value( property, value, auto );
+         else // is percentage value
+            result = SetCameraProperty_percentage( property, value, auto );
+
+         return result;
+      }
+
       public bool SetCameraProperty_value( CameraProperty property, bool auto )
       {
          return SetCameraProperty_value( property, 0, auto );
@@ -509,6 +533,11 @@ namespace Touchless.Vision.Camera
          }
 
          return result;
+      }
+
+      public bool SetCameraProperty_percentage( CameraProperty property, bool auto )
+      {
+         return SetCameraProperty_percentage( property, 0, auto );
       }
 
       // Assume manual control
