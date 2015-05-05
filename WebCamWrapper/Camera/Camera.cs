@@ -100,6 +100,8 @@ namespace Touchless.Vision.Camera
          }
       }
 
+      #region ICompare<CameraPropertyValue> Members
+
       public int CompareTo( CameraPropertyValue other )
       {
          int result = 0;
@@ -126,19 +128,28 @@ namespace Touchless.Vision.Camera
          return result;
       }
 
+      #endregion
+
+      #region IEquatable<CameraPropertyValue> Members
+
       public bool Equals( CameraPropertyValue other )
       {
-         return CompareTo( other ) == 0;
+         return Object.ReferenceEquals( this, other ) || CompareTo( other ) == 0;
       }
+
+      #endregion
 
       public override bool Equals( Object obj )
       {
          bool result;
 
-         CameraPropertyValue other = obj as CameraPropertyValue;
+         if( !( result = Object.ReferenceEquals( this, obj ) ) )
+         {
+            CameraPropertyValue other = obj as CameraPropertyValue;
 
-         if( result = other != null )
-            result = Equals( other );
+            if( result = other != null )
+               result = Equals( other );
+         }
 
          return result;
       }
@@ -209,6 +220,8 @@ namespace Touchless.Vision.Camera
          }
       }
 
+      #region ICompare<CameraPropertyRange> Members
+
       public int CompareTo( CameraPropertyRange other )
       {
          int result = 0;
@@ -249,19 +262,28 @@ namespace Touchless.Vision.Camera
          return result;
       }
 
+      #endregion
+
+      #region IEquatable<CameraPropertyRange> Members
+
       public bool Equals( CameraPropertyRange other )
       {
-         return CompareTo( other ) == 0;
+         return Object.ReferenceEquals( this, other ) || CompareTo( other ) == 0;
       }
+
+      #endregion
 
       public override bool Equals( Object obj )
       {
          bool result;
 
-         CameraPropertyRange other = obj as CameraPropertyRange;
+         if( !( result = Object.ReferenceEquals( this, obj ) ) )
+         {
+            CameraPropertyRange other = obj as CameraPropertyRange;
 
-         if( result = other != null )
-            result = Equals( other );
+            if( result = other != null )
+               result = Equals( other );
+         }
 
          return result;
       }
@@ -335,7 +357,7 @@ namespace Touchless.Vision.Camera
 
       public bool Equals( CaptureSize other )
       {
-         return CompareTo( other ) == 0;
+         return Object.ReferenceEquals( this, other ) || CompareTo( other ) == 0;
       }
 
       #endregion
@@ -344,9 +366,12 @@ namespace Touchless.Vision.Camera
       {
          bool result;
 
-         CaptureSize other = obj as CaptureSize;
-         if( result = other != null )
-            result = Equals( other );
+         if( !( result = Object.ReferenceEquals( this, obj ) ) )
+         {
+            CaptureSize other = obj as CaptureSize;
+            if( result = other != null )
+               result = Equals( other );
+         }
 
          return result;
       }
