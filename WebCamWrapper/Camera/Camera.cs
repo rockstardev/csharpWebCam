@@ -29,7 +29,7 @@ namespace Touchless.Vision.Camera
       Gain = WebCamLib.CameraProperty.Gain,
    }
 
-   public sealed class CameraPropertyValue
+   public sealed class CameraPropertyValue : IComparable<CameraPropertyValue>, IEquatable<CameraPropertyValue>
    {
       public CameraPropertyValue( bool isPercentageValue, int value, bool isAuto )
       {
@@ -41,13 +41,22 @@ namespace Touchless.Vision.Camera
       public int Value
       {
          get;
-         private set;
+         set;
       }
+
+      private bool isAuto;
 
       public bool IsAuto
       {
-         get;
-         private set;
+         get
+         {
+            return isAuto;
+         }
+
+         set
+         {
+            isAuto = value;
+         }
       }
 
       public bool IsManual
@@ -56,7 +65,14 @@ namespace Touchless.Vision.Camera
          {
             return !IsAuto;
          }
+
+         set
+         {
+            IsAuto = !value;
+         }
       }
+
+      private bool isPercentageValue;
 
       public bool IsActualValue
       {
@@ -64,16 +80,71 @@ namespace Touchless.Vision.Camera
          {
             return !IsPercentageValue;
          }
+
+         set
+         {
+            IsPercentageValue = !value;
+         }
       }
 
       public bool IsPercentageValue
       {
-         get;
-         private set;
+         get
+         {
+            return isPercentageValue;
+         }
+
+         set
+         {
+            isPercentageValue = value;
+         }
+      }
+
+      public int CompareTo( CameraPropertyValue other )
+      {
+         int result = 0;
+
+         if( IsActualValue && other.IsPercentageValue )
+            result = -1;
+         else if( IsPercentageValue && other.IsActualValue )
+            result = 1;
+         else
+         {
+            if( Value < other.Value )
+               result = -1;
+            else if( Value > other.Value )
+               result = 1;
+            else
+            {
+               if( IsAuto && other.IsManual )
+                  result = -1;
+               else if( IsManual && other.IsAuto )
+                  result = 1;
+            }
+         }
+
+         return result;
+      }
+
+      public bool Equals( CameraPropertyValue other )
+      {
+         return CompareTo( other ) == 0;
+      }
+
+      public override bool Equals( Object obj )
+      {
+         bool result;
+
+         CameraPropertyValue other = obj as CameraPropertyValue;
+
+         if( result = other != null )
+            result = Equals( other );
+
+         return result;
       }
    }
 
-   public sealed class CameraPropertyRange
+   public sealed class CameraPropertyRange : IComparable<CameraPropertyRange>, IEquatable<CameraPropertyRange>
    {
       public CameraPropertyRange( int minimum, int maximum, int step, int defaults, bool isAuto )
       {
@@ -136,6 +207,63 @@ namespace Touchless.Vision.Camera
          {
             return !IsAuto;
          }
+      }
+
+      public int CompareTo( CameraPropertyRange other )
+      {
+         int result = 0;
+
+         if( Minimum < other.Minimum )
+            result = -1;
+         else if( Minimum > other.Minimum )
+            result = 1;
+         else
+         {
+            if( Maximum < other.Maximum )
+               result = -1;
+            else if( Maximum > other.Maximum )
+               result = 1;
+            else
+            {
+               if( Step < other.Step )
+                  result = -1;
+               else if( Step > other.Step )
+                  result = 1;
+               else
+               {
+                  if( Defaults < other.Defaults )
+                     result = -1;
+                  else if( Defaults > other.Defaults )
+                     result = 1;
+                  else
+                  {
+                     if( IsAuto && other.IsManual )
+                        result = -1;
+                     else if( IsManual && other.IsAuto )
+                        result = 1;
+                  }
+               }
+            }
+         }
+
+         return result;
+      }
+
+      public bool Equals( CameraPropertyRange other )
+      {
+         return CompareTo( other ) == 0;
+      }
+
+      public override bool Equals( Object obj )
+      {
+         bool result;
+
+         CameraPropertyRange other = obj as CameraPropertyRange;
+
+         if( result = other != null )
+            result = Equals( other );
+
+         return result;
       }
    }
 
