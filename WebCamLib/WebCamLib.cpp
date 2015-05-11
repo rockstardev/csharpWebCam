@@ -58,6 +58,50 @@ void CameraInfo::Name::set( String^ value )
 }
 #pragma endregion
 
+/*
+#pragma region CameraPropertyCapabilities Items
+CameraPropertyCapabilities::CameraPropertyCapabilities( CameraProperty prop, bool getSupported, bool setSupported, bool getRangeSupported )
+{
+}
+
+CameraProperty CameraPropertyCapabilities::Property::get()
+{
+}
+
+void CameraPropertyCapabilities::Property::set( CameraProperty value )
+{
+}
+
+bool CameraPropertyCapabilities::GetSupported::get()
+{
+}
+
+void CameraPropertyCapabilities::GetSupported::set( bool value )
+{
+}
+
+bool CameraPropertyCapabilities::SetSupported::get()
+{
+}
+
+void CameraPropertyCapabilities::SetSupported::set( bool value )
+{
+}
+
+bool CameraPropertyCapabilities::GetRangeSupported::get()
+{
+}
+
+void CameraPropertyCapabilities::GetRangeSupported::set( bool value )
+{
+}
+
+bool CameraPropertyCapabilities::IsSupported::get()
+{
+}
+#pragma endregion
+*/
+
 // Structure to hold camera information
 struct CameraInfoStruct
 {
@@ -604,12 +648,27 @@ inline void CameraMethods::SetProperty_value(CameraProperty prop, long value, bo
 
 inline bool CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto)
 {
+	return SetProperty_value( prop, value, bAuto, true );
+}
+
+inline void CameraMethods::SetProperty_value( CameraProperty prop, long value, bool bAuto, bool throwValidationError, interior_ptr<bool> successful )
+{
+	*successful = SetProperty_value( prop, value, bAuto, throwValidationError );
+}
+
+inline bool CameraMethods::SetProperty_value( CameraProperty prop, long value, bool bAuto, bool throwValidationError )
+{
 	bool result = false;
 
-	if( IsCameraControlProperty( prop ) )
-		result = SetProperty_value( GetCameraControlProperty( prop ), value, bAuto );
-	else if( IsVideoProcAmpProperty( prop ) )
-		result = SetProperty_value( GetVideoProcAmpProperty( prop ), value, bAuto );
+	if( ValidatePropertyValue( prop, value ) )
+	{
+		if( IsCameraControlProperty( prop ) )
+			result = SetProperty_value( GetCameraControlProperty( prop ), value, bAuto );
+		else if( IsVideoProcAmpProperty( prop ) )
+			result = SetProperty_value( GetVideoProcAmpProperty( prop ), value, bAuto );
+	}
+	else if( throwValidationError )
+		throw gcnew ArgumentOutOfRangeException( "Property value is outside of its defined range." );
 
 	return result;
 }
@@ -715,7 +774,7 @@ bool CameraMethods::GetPropertyRange( WebCamLib::VideoProcAmpProperty prop, inte
 bool CameraMethods::GetProperty_value( WebCamLib::CameraControlProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto )
 {
 	if( g_pIBaseFilterCam == NULL )
-		throw gcnew InvalidOperationException( "No camera started." ); 
+		throw gcnew InvalidOperationException( "No camera started." );
 
 	bool result = false;
 
@@ -741,7 +800,7 @@ bool CameraMethods::GetProperty_value( WebCamLib::CameraControlProperty prop, in
 bool CameraMethods::GetProperty_value( WebCamLib::VideoProcAmpProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto )
 {
 	if( g_pIBaseFilterCam == NULL )
-		throw gcnew InvalidOperationException( "No camera started." ); 
+		throw gcnew InvalidOperationException( "No camera started." );
 
 	bool result = false;
 
@@ -767,7 +826,7 @@ bool CameraMethods::GetProperty_value( WebCamLib::VideoProcAmpProperty prop, int
 bool CameraMethods::SetProperty_value( WebCamLib::CameraControlProperty prop, long value, bool bAuto )
 {
 	if( g_pIBaseFilterCam == NULL )
-		throw gcnew InvalidOperationException( "No camera started." ); 
+		throw gcnew InvalidOperationException( "No camera started." );
 
 	bool result = false;
 
@@ -789,7 +848,7 @@ bool CameraMethods::SetProperty_value( WebCamLib::CameraControlProperty prop, lo
 bool CameraMethods::SetProperty_value( WebCamLib::VideoProcAmpProperty prop, long value, bool bAuto )
 {
 	if( g_pIBaseFilterCam == NULL )
-		throw gcnew InvalidOperationException( "No camera started." ); 
+		throw gcnew InvalidOperationException( "No camera started." );
 
 	bool result = false;
 
@@ -803,6 +862,39 @@ bool CameraMethods::SetProperty_value( WebCamLib::VideoProcAmpProperty prop, lon
 		hr = pProcAmp->Set(lProperty, value, bAuto ? VideoProcAmp_Flags_Auto : VideoProcAmp_Flags_Manual);
 
 		result = SUCCEEDED( hr );
+	}
+
+	return result;
+}
+
+void CameraMethods::PropertyHasRange( CameraProperty prop, interior_ptr<bool> successful )
+{
+	*successful = PropertyHasRange( prop );
+}
+
+bool CameraMethods::PropertyHasRange( CameraProperty prop )
+{
+	bool result = prop != CameraProperty::WhiteBalance && prop != CameraProperty::Gain;
+
+	return result;
+}
+
+inline void CameraMethods::ValidatePropertyValue( CameraProperty prop, long value, interior_ptr<bool> successful )
+{
+	*successful = ValidatePropertyValue( prop, value );
+}
+
+bool CameraMethods::ValidatePropertyValue( CameraProperty prop, long value )
+{
+	bool result = true;
+
+	if( PropertyHasRange( prop ) )
+	{
+		long min, max, steppingDelta, defaults;
+		bool bAuto;
+		GetPropertyRange( prop, &min, &max, &steppingDelta, &defaults, &bAuto );
+
+		result = value >= min && value <= max;
 	}
 
 	return result;

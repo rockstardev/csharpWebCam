@@ -96,6 +96,47 @@ namespace WebCamLib
 		Gain = WebCamLib::VideoProcAmpProperty::Gain | PropertyTypeMask::VideoProcAmpPropertyMask,
 	};
 
+	/*
+	public ref class CameraPropertyCapabilities
+	{
+	public:
+		CameraPropertyCapabilities( CameraProperty prop, bool getSupported, bool setSupported, bool getRangeSupported );
+
+		property CameraProperty Property
+		{
+			CameraProperty get();
+		private: void set( CameraProperty value );
+		}
+
+		property bool GetSupported
+		{
+			bool get();
+		private: void set( bool value );
+		}
+
+		property bool SetSupported
+		{
+			bool get();
+		private: void set( bool value );
+		}
+
+		property bool GetRangeSupported
+		{
+			bool get();
+		private: void set( bool value );
+		}
+
+		property bool IsSupported
+		{
+			bool get();
+		}
+
+	private:
+		CameraProperty prop;
+		bool getSupported, setSupported, getRangeSupported;
+	};
+	*/
+
 	/// <summary>
 	/// DirectShow wrapper around a web cam, used for image capture
 	/// </summary>
@@ -160,13 +201,25 @@ namespace WebCamLib
 
 		bool SetProperty_value( CameraProperty prop, long value, bool bAuto );
 
+		void SetProperty_value( CameraProperty prop, long value, bool bAuto, bool throwValidationError, interior_ptr<bool> successful );
+
+		bool SetProperty_value( CameraProperty prop, long value, bool bAuto, bool throwValidationError );
+
 		void SetProperty_percentage( CameraProperty prop, long percentage, bool bAuto, interior_ptr<bool> successful );
 
 		bool SetProperty_percentage( CameraProperty prop, long percentage, bool bAuto );
 
+		void PropertyHasRange( CameraProperty prop, interior_ptr<bool> successful );
+
+		bool PropertyHasRange( CameraProperty prop );
+
 		void GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful );
 
 		bool GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto );
+
+		void ValidatePropertyValue( CameraProperty prop, long value, interior_ptr<bool> successful );
+
+		bool ValidatePropertyValue( CameraProperty prop, long value );
 		#pragma endregion
 
 		void GetCaptureSizes(int index, IList<Tuple<int,int,int>^> ^ sizes);

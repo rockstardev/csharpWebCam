@@ -791,6 +791,24 @@ namespace Touchless.Vision.Camera
 
          return result;
       }
+
+      public bool CameraPropertyHasRange( CameraProperty property )
+      {
+         bool result = false;
+
+         _cameraMethods.PropertyHasRange( ( WebCamLib.CameraProperty ) property, ref result );
+
+         return result;
+      }
+
+      public bool ValidateCameraProperty( CameraProperty property, int value )
+      {
+         bool result = false;
+
+         _cameraMethods.ValidatePropertyValue( ( WebCamLib.CameraProperty ) property, value, ref result );
+
+         return result;
+      }
       #endregion
 
       public IList<CaptureSize> GetCaptureSizes()

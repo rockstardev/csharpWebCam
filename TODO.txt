@@ -2,7 +2,7 @@ WebCamLib:
 - Try moving the global (module) storage variables in the class instance.
 - Tackle the warnings.
 - Consider adding an #ifndef guard.
-- Add property range validation.
+- Make the CameraMethods an abstract class or an interface.
 
 Demo:
 - Add a means to change the properties.
