@@ -3,6 +3,7 @@ WebCamLib:
 - Tackle the warnings.
 - Consider adding an #ifndef guard.
 - Make the CameraMethods an abstract class or an interface.
+- Remove the MAX_CAMERAS constant limitation.
 
 Demo:
 - Add a means to change the properties.
