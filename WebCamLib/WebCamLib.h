@@ -96,11 +96,16 @@ namespace WebCamLib
 		Gain = WebCamLib::VideoProcAmpProperty::Gain | PropertyTypeMask::VideoProcAmpPropertyMask,
 	};
 
-	/*
 	public ref class CameraPropertyCapabilities
 	{
 	public:
-		CameraPropertyCapabilities( CameraProperty prop, bool getSupported, bool setSupported, bool getRangeSupported );
+		CameraPropertyCapabilities( int cameraIndex, CameraProperty prop, bool isGetSupported, bool isSetSupported, bool isGetRangeSupported );
+
+		property int CameraIndex
+		{
+			int get();
+		private: void set( int cameraIndex );
+		}
 
 		property CameraProperty Property
 		{
@@ -108,19 +113,19 @@ namespace WebCamLib
 		private: void set( CameraProperty value );
 		}
 
-		property bool GetSupported
+		property bool IsGetSupported
 		{
 			bool get();
 		private: void set( bool value );
 		}
 
-		property bool SetSupported
+		property bool IsSetSupported
 		{
 			bool get();
 		private: void set( bool value );
 		}
 
-		property bool GetRangeSupported
+		property bool IsGetRangeSupported
 		{
 			bool get();
 		private: void set( bool value );
@@ -132,10 +137,10 @@ namespace WebCamLib
 		}
 
 	private:
+		int cameraIndex;
 		CameraProperty prop;
-		bool getSupported, setSupported, getRangeSupported;
+		bool isGetSupported, isSetSupported, isGetRangeSupported;
 	};
-	*/
 
 	/// <summary>
 	/// DirectShow wrapper around a web cam, used for image capture
@@ -220,9 +225,21 @@ namespace WebCamLib
 		void ValidatePropertyValue( CameraProperty prop, long value, interior_ptr<bool> successful );
 
 		bool ValidatePropertyValue( CameraProperty prop, long value );
+
+		CameraPropertyCapabilities^ GetPropertyCapability( CameraProperty prop );
+
+		property IDictionary<CameraProperty, CameraPropertyCapabilities^> ^ PropertyCapabilities
+		{
+			IDictionary<CameraProperty, CameraPropertyCapabilities^> ^ get();
+		}
 		#pragma endregion
 
 		void GetCaptureSizes(int index, IList<Tuple<int,int,int>^> ^ sizes);
+
+		property IList<Tuple<int,int,int>^> ^ CaptureSizes
+		{
+			IList<Tuple<int,int,int>^> ^ get();
+		}
 
 		/// <summary>
 		/// Stops the currently running camera and cleans up any global resources

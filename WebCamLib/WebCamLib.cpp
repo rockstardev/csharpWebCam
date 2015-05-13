@@ -58,49 +58,71 @@ void CameraInfo::Name::set( String^ value )
 }
 #pragma endregion
 
-/*
 #pragma region CameraPropertyCapabilities Items
-CameraPropertyCapabilities::CameraPropertyCapabilities( CameraProperty prop, bool getSupported, bool setSupported, bool getRangeSupported )
+CameraPropertyCapabilities::CameraPropertyCapabilities( int cameraIndex, CameraProperty prop, bool isGetSupported, bool isSetSupported, bool isGetRangeSupported )
 {
+	CameraIndex = cameraIndex;
+	Property = prop;
+	IsGetSupported = isGetSupported;
+	IsSetSupported = isSetSupported;
+	IsGetRangeSupported = isGetRangeSupported;
+}
+
+int CameraPropertyCapabilities::CameraIndex::get()
+{
+	return cameraIndex;
+}
+
+void CameraPropertyCapabilities::CameraIndex::set( int value )
+{
+	cameraIndex =value;
 }
 
 CameraProperty CameraPropertyCapabilities::Property::get()
 {
+	return prop;
 }
 
 void CameraPropertyCapabilities::Property::set( CameraProperty value )
 {
+	prop = value;
 }
 
-bool CameraPropertyCapabilities::GetSupported::get()
+bool CameraPropertyCapabilities::IsGetSupported::get()
 {
+	return isGetSupported;
 }
 
-void CameraPropertyCapabilities::GetSupported::set( bool value )
+void CameraPropertyCapabilities::IsGetSupported::set( bool value )
 {
+	isGetSupported = value;
 }
 
-bool CameraPropertyCapabilities::SetSupported::get()
+bool CameraPropertyCapabilities::IsSetSupported::get()
 {
+	return isSetSupported;
 }
 
-void CameraPropertyCapabilities::SetSupported::set( bool value )
+void CameraPropertyCapabilities::IsSetSupported::set( bool value )
 {
+	isSetSupported = value;
 }
 
-bool CameraPropertyCapabilities::GetRangeSupported::get()
+bool CameraPropertyCapabilities::IsGetRangeSupported::get()
 {
+	return isGetRangeSupported;
 }
 
-void CameraPropertyCapabilities::GetRangeSupported::set( bool value )
+void CameraPropertyCapabilities::IsGetRangeSupported::set( bool value )
 {
+	isGetRangeSupported = value;
 }
 
 bool CameraPropertyCapabilities::IsSupported::get()
 {
+	return IsGetSupported || IsSetSupported || IsGetRangeSupported;
 }
 #pragma endregion
-*/
 
 // Structure to hold camera information
 struct CameraInfoStruct
@@ -899,6 +921,35 @@ bool CameraMethods::ValidatePropertyValue( CameraProperty prop, long value )
 
 	return result;
 }
+
+CameraPropertyCapabilities^ CameraMethods::GetPropertyCapability( CameraProperty prop )
+{
+	long value;
+	bool isAuto;
+
+	bool isGetSupported = GetProperty_value( prop, &value, &isAuto );
+	bool isSetSupported = SetProperty_value( prop, value, isAuto );
+	bool propertyHasRange = PropertyHasRange( prop );
+
+	CameraPropertyCapabilities^ result = gcnew CameraPropertyCapabilities( ActiveCameraIndex, prop, isGetSupported, isSetSupported, propertyHasRange );
+
+	return result;
+}
+
+IDictionary<CameraProperty, CameraPropertyCapabilities^> ^ CameraMethods::PropertyCapabilities::get()
+{
+	Array^ propertyValues = Enum::GetValues( CameraProperty::typeid );
+
+	IDictionary<CameraProperty, CameraPropertyCapabilities^> ^ result = gcnew Dictionary<CameraProperty, CameraPropertyCapabilities^>( propertyValues->Length );
+
+	for( Int32 i = 0; i < propertyValues->Length; ++i )
+	{
+		CameraProperty prop = static_cast<CameraProperty>( propertyValues->GetValue( i ) );
+		result->Add( prop, GetPropertyCapability( prop ) );
+	}
+
+	return result;
+}
 #pragma endregion
 
 /// <summary>
@@ -1191,6 +1242,15 @@ void CameraMethods::GetCaptureSizes(int index, IList<Tuple<int,int,int>^> ^ size
 		pMoniker->Release();
 		pMoniker = NULL;
 	}
+}
+
+IList<Tuple<int,int,int>^> ^ CameraMethods::CaptureSizes::get()
+{
+	IList<Tuple<int,int,int>^> ^ result = gcnew List<Tuple<int,int,int>^>();
+
+	GetCaptureSizes( ActiveCameraIndex, result );
+
+	return result;
 }
 
 // If bpp is -1, the first format matching the width and height is selected.

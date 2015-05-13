@@ -289,6 +289,107 @@ namespace Touchless.Vision.Camera
       }
    }
 
+   public sealed class CameraPropertyCapabilities : IComparable<CameraPropertyCapabilities>, IEquatable<CameraPropertyCapabilities>
+   {
+      internal CameraPropertyCapabilities( Camera camera, WebCamLib.CameraPropertyCapabilities capabilities )
+      {
+         Camera = camera;
+         InternalCapabilities = capabilities;
+      }
+
+      public Camera Camera
+      {
+         get;
+         private set;
+      }
+
+      internal WebCamLib.CameraPropertyCapabilities InternalCapabilities
+      {
+         get;
+         private set;
+      }
+
+      public bool IsSupported
+      {
+         get
+         {
+            return InternalCapabilities.IsSupported;
+         }
+      }
+
+      public bool IsGetSupported
+      {
+         get
+         {
+            return InternalCapabilities.IsGetSupported;
+         }
+      }
+
+      public bool IsSetSupported
+      {
+         get
+         {
+            return InternalCapabilities.IsSetSupported;
+         }
+      }
+
+      public bool IsGetRangeSupported
+      {
+         get
+         {
+            return InternalCapabilities.IsGetRangeSupported;
+         }
+      }
+
+      #region IComparable<CameraPropertyCapabilities> Members
+      // sort order: IsGetSupported, IsSetSupported, IsGetRangeSupported; this exists and other doesn't first/less for all keys
+      public int CompareTo( CameraPropertyCapabilities other )
+      {
+         int result = 0;
+
+         if( IsGetSupported && !other.IsGetSupported )
+            result = -1;
+         else if( !IsGetSupported && other.IsGetSupported )
+            result = 1;
+         else
+         {
+            if( IsSetSupported && !other.IsSetSupported )
+               result = -1;
+            else if( !IsSetSupported && other.IsSetSupported )
+               result = 1;
+            else
+            {
+               if( IsGetRangeSupported && !other.IsGetRangeSupported )
+                  result = -1;
+               else if( !IsGetRangeSupported && other.IsGetRangeSupported )
+                  result = 1;
+            }
+         }
+
+         return result;
+      }
+      #endregion
+
+      #region IEquatable<CameraPropertyCapabilities>
+      public bool Equals( CameraPropertyCapabilities other )
+      {
+         return CompareTo( other ) == 0;
+      }
+      #endregion
+
+      public override bool Equals( object obj )
+      {
+         bool result;
+
+         CameraPropertyCapabilities capabilities = obj as CameraPropertyCapabilities;
+
+         if( result = capabilities != null )
+            result = Equals( capabilities );
+
+         return result;
+      }
+   }
+
    public sealed class CaptureSize : IComparable<CaptureSize>, IEquatable<CaptureSize>
    {
       public CaptureSize( int width, int height, int colorDepth )
@@ -809,25 +910,46 @@ namespace Touchless.Vision.Camera
 
          return result;
       }
+
+      public IDictionary<CameraProperty, CameraPropertyCapabilities> CameraPropertyCapabilities
+      {
+         get
+         {
+            IDictionary<CameraProperty, CameraPropertyCapabilities> result = new Dictionary<CameraProperty, CameraPropertyCapabilities>( _cameraMethods.PropertyCapabilities.Count );
+
+            foreach( WebCamLib.CameraProperty property in _cameraMethods.PropertyCapabilities.Keys )
+            {
+               CameraProperty prop = ( CameraProperty ) property;
+               CameraPropertyCapabilities capabilities = new CameraPropertyCapabilities( this, _cameraMethods.PropertyCapabilities[ property ] );
+
+               result.Add( prop, capabilities );
+            }
+
+            return result;
+         }
+      }
       #endregion
 
-      public IList<CaptureSize> GetCaptureSizes()
+      public IList<CaptureSize> CaptureSizes
       {
-         IList<Tuple<int, int, int>> rawSizes = new List<Tuple<int, int, int>>();
-
-         lock( CameraMethodsLock )
+         get
          {
-            _cameraMethods.GetCaptureSizes( _index, rawSizes );
-         }
+            IList<Tuple<int, int, int>> rawSizes = new List<Tuple<int, int, int>>();
 
-         IList<CaptureSize> result = new List<CaptureSize>( rawSizes.Count );
-         foreach( Tuple<int, int, int> size in rawSizes )
-         {
-            CaptureSize newSize = new CaptureSize( size.Item1, size.Item2, size.Item3 );
-            result.Add( newSize );
-         }
+            lock( CameraMethodsLock )
+            {
+               _cameraMethods.GetCaptureSizes( _index, rawSizes );
+            }
 
-         return result;
+            IList<CaptureSize> result = new List<CaptureSize>( rawSizes.Count );
+            foreach( Tuple<int, int, int> size in rawSizes )
+            {
+               CaptureSize newSize = new CaptureSize( size.Item1, size.Item2, size.Item3 );
+               result.Add( newSize );
+            }
+
+            return result;
+         }
       }
 
       /// <summary>
