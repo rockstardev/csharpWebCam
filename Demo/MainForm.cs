@@ -169,6 +169,20 @@ namespace Demo
                     { "Tilt (Degrees)", CameraProperty.Tilt_degrees }, 
                     { "Roll (Degrees)", CameraProperty.Roll_degrees }, 
                     { "Zoom (mm)", CameraProperty.Zoom_mm }, 
+                    { "Exposure (log2(seconds))", CameraProperty.Exposure_lgSec }, 
+                    { "Iris (10f)", CameraProperty.Iris_10f }, 
+                    { "Focal Length (mm)", CameraProperty.FocalLength_mm }, 
+                    { "Flash", CameraProperty.Flash }, 
+                    { "Brightness", CameraProperty.Brightness }, 
+                    { "Contrast", CameraProperty.Contrast }, 
+                    { "Hue", CameraProperty.Hue }, 
+                    { "Saturation", CameraProperty.Saturation }, 
+                    { "Sharpness", CameraProperty.Sharpness }, 
+                    { "Gamma", CameraProperty.Gamma }, 
+                    { "Color Enable", CameraProperty.ColorEnable }, 
+                    { "White Balance", CameraProperty.WhiteBalance }, 
+                    { "Backlight Compensation", CameraProperty.BacklightCompensation }, 
+                    { "Gain", CameraProperty.Gain }, 
                  };
 
               return displayPropertyValues;
