@@ -122,6 +122,11 @@ bool CameraPropertyCapabilities::IsSupported::get()
 {
 	return IsGetSupported || IsSetSupported || IsGetRangeSupported;
 }
+
+bool CameraPropertyCapabilities::IsFullySupported::get()
+{
+	return IsGetSupported && IsSetSupported && IsGetRangeSupported;
+}
 #pragma endregion
 
 // Structure to hold camera information

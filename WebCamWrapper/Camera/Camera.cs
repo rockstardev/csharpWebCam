@@ -317,6 +317,14 @@ namespace Touchless.Vision.Camera
          }
       }
 
+      public bool IsFullySupported
+      {
+         get
+         {
+            return InternalCapabilities.IsFullySupported;
+         }
+      }
+
       public bool IsGetSupported
       {
          get

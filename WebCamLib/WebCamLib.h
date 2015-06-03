@@ -136,6 +136,11 @@ namespace WebCamLib
 			bool get();
 		}
 
+		property bool IsFullySupported
+		{
+			bool get();
+		}
+
 	private:
 		int cameraIndex;
 		CameraProperty prop;
