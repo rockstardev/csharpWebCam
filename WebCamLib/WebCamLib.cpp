@@ -720,6 +720,8 @@ bool CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage,
 			long value = (max - min + 1 ) / ( percentage / 100 ) + min;
 			result = SetProperty_value( prop, value, bAuto );
 		}
+
+		return result;
 	}
 	else
 		throw gcnew ArgumentOutOfRangeException( "Percentage is not valid." );
@@ -932,9 +934,13 @@ CameraPropertyCapabilities^ CameraMethods::GetPropertyCapability( CameraProperty
 	long value;
 	bool isAuto;
 
-	bool isGetSupported = GetProperty_value( prop, &value, &isAuto );
-	bool isSetSupported = SetProperty_value( prop, value, isAuto );
 	bool propertyHasRange = PropertyHasRange( prop );
+	bool isSetSupported;
+	bool isGetSupported = GetProperty_value( prop, &value, &isAuto );
+	if( isGetSupported )
+		isSetSupported = SetProperty_value( prop, value, isAuto );
+	else
+		isSetSupported = false;
 
 	CameraPropertyCapabilities^ result = gcnew CameraPropertyCapabilities( ActiveCameraIndex, prop, isGetSupported, isSetSupported, propertyHasRange );
 
