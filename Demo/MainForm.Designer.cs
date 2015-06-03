@@ -77,7 +77,6 @@
          this.comboBoxCameras.Name = "comboBoxCameras";
          this.comboBoxCameras.Size = new System.Drawing.Size(153, 21);
          this.comboBoxCameras.TabIndex = 12;
-         this.comboBoxCameras.SelectedIndexChanged += new System.EventHandler(this.comboBoxCameras_SelectedIndexChanged);
          // 
          // btnConfig
          // 
@@ -114,12 +113,14 @@
          // 
          // cameraPropertyValue
          // 
+         this.cameraPropertyValue.Enabled = false;
          this.cameraPropertyValue.FormattingEnabled = true;
          this.cameraPropertyValue.Location = new System.Drawing.Point(64, 542);
          this.cameraPropertyValue.Name = "cameraPropertyValue";
          this.cameraPropertyValue.Size = new System.Drawing.Size(156, 21);
          this.cameraPropertyValue.TabIndex = 15;
          this.cameraPropertyValue.SelectedIndexChanged += new System.EventHandler(this.cameraPropertyValue_SelectedIndexChanged);
+         this.cameraPropertyValue.EnabledChanged += new System.EventHandler(this.cameraPropertyValue_EnabledChanged);
          // 
          // cameraPropertyTitle
          // 

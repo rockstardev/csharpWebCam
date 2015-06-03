@@ -38,11 +38,6 @@ namespace Demo
             thrashOldCamera();
         }
 
-        private void comboBoxCameras_SelectedIndexChanged( Object sender, EventArgs e )
-        {
-           CurrentCameraPropertyCapabilities = CurrentCamera.CameraPropertyCapabilities;
-        }
-
         private void btnStop_Click(object sender, EventArgs e)
         {
             thrashOldCamera();
@@ -80,9 +75,7 @@ namespace Demo
                 _frameSource.NewFrame += OnImageCaptured;
 
                 pictureBoxDisplay.Paint += new PaintEventHandler(drawLatestImage);
-                _frameSource.StartFrameCapture();
-
-                InitializeCameraPropertyControls();
+                cameraPropertyValue.Enabled = _frameSource.StartFrameCapture();
             }
             catch (Exception ex)
             {
@@ -208,7 +201,7 @@ namespace Demo
               Int32 selectedIndex = cameraPropertyValue.SelectedIndex;
               String selectedItem = cameraPropertyValue.Items[ selectedIndex ] as String;
 
-              CameraProperty result = displayPropertyValues[ selectedItem ];
+              CameraProperty result = DisplayPropertyValues[ selectedItem ];
               return result;
            }
         }
@@ -269,10 +262,11 @@ namespace Demo
 
         private void InitializeCameraPropertyControls()
         {
+           CurrentCameraPropertyCapabilities = CurrentCamera.CameraPropertyCapabilities;
            CurrentCameraPropertyRanges = new Dictionary<CameraProperty, CameraPropertyRange>();
 
            cameraPropertyValue.Items.Clear();
-           cameraPropertyValue.Items.AddRange( displayPropertyValues.Keys.ToArray() );
+           cameraPropertyValue.Items.AddRange( DisplayPropertyValues.Keys.ToArray() );
            cameraPropertyValue.SelectedIndex = 0;
 
            cameraPropertyValueTypeSelection.SelectedIndex = 0;
@@ -365,6 +359,12 @@ namespace Demo
            CameraPropertyValue value = CurrentCamera.GetCameraProperty( SelectedCameraProperty, IsCameraPropertyValueTypeValue );
            cameraPropertyValueValue.Value = value.Value;
            cameraPropertyValueAuto.Checked = value.IsAuto;
+        }
+
+        private void cameraPropertyValue_EnabledChanged( Object sender, EventArgs e )
+        {
+           if( cameraPropertyValue.Enabled )
+              InitializeCameraPropertyControls();
         }
         #endregion
     }
