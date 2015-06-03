@@ -55,7 +55,7 @@ namespace WebCamLib
 		Zoom_mm,
 		Exposure_lgSec,
 		Iris_10f,
-		Focus_mm,
+		FocalLength_mm,
 		Flash,
 	};
 
@@ -82,7 +82,7 @@ namespace WebCamLib
 		Zoom_mm = WebCamLib::CameraControlProperty::Zoom_mm | PropertyTypeMask::CameraControlPropertyMask,
 		Exposure_lgSec = WebCamLib::CameraControlProperty::Exposure_lgSec | PropertyTypeMask::CameraControlPropertyMask,
 		Iris_10f = WebCamLib::CameraControlProperty::Iris_10f | PropertyTypeMask::CameraControlPropertyMask,
-		Focus_mm = WebCamLib::CameraControlProperty::Focus_mm | PropertyTypeMask::CameraControlPropertyMask,
+		FocalLength_mm = WebCamLib::CameraControlProperty::FocalLength_mm | PropertyTypeMask::CameraControlPropertyMask,
 		Flash = WebCamLib::CameraControlProperty::Flash | PropertyTypeMask::CameraControlPropertyMask,
 		Brightness = WebCamLib::VideoProcAmpProperty::Brightness | PropertyTypeMask::VideoProcAmpPropertyMask,
 		Contrast = WebCamLib::VideoProcAmpProperty::Brightness | PropertyTypeMask::VideoProcAmpPropertyMask,

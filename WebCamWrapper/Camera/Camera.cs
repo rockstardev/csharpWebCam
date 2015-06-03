@@ -15,7 +15,7 @@ namespace Touchless.Vision.Camera
       Zoom_mm = WebCamLib.CameraProperty.Zoom_mm,
       Exposure_lgSec = WebCamLib.CameraProperty.Exposure_lgSec,
       Iris_10f = WebCamLib.CameraProperty.Iris_10f,
-      Focus_mm = WebCamLib.CameraProperty.Focus_mm,
+      FocalLength_mm = WebCamLib.CameraProperty.FocalLength_mm,
       Flash = WebCamLib.CameraProperty.Flash,
       Brightness = WebCamLib.CameraProperty.Brightness,
       Contrast = WebCamLib.CameraProperty.Brightness,
