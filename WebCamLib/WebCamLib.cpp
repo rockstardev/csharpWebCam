@@ -717,7 +717,7 @@ bool CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage,
 		bool placeHolder;
 		if( result = GetPropertyRange( prop, &min, &max, &steppingDelta, &defaults, &placeHolder ) )
 		{
-			long value = (max - min + 1 ) / ( percentage / 100 ) + min;
+			long value = ( ( max - min ) * percentage ) / 100 + min;
 			result = SetProperty_value( prop, value, bAuto );
 		}
 
