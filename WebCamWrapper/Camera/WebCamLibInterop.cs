@@ -24,7 +24,7 @@ namespace Touchless.Vision.Camera
         //    out IntPtr name);
 
         public delegate void CaptureCallbackProc(
-                int dwSize,
+                UInt32 dwSize,
                 [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1, SizeParamIndex = 0)] byte[] abData);
 
         //[DllImport("WebCamLib.dll", EntryPoint = "StartCamera")]

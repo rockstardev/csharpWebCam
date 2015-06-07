@@ -1,0 +1,18 @@
+WebCamLib:
+- Try moving the global (module) storage variables in the class instance.
+- Tackle the warnings.
+- Consider adding an #ifndef guard.
+- Make the CameraMethods an abstract class or an interface.
+- Remove the MAX_CAMERAS constant limitation.
+
+Demo:
+- Add a means to change the properties.
+  - use a combobox to select the property
+    - initially filter out the unsupported properties
+  - have a read-only textbox which displays the current value
+  - have two read-only textboxes which display the range
+  - have an editable checkbox which displays/controls auto/manual selection
+  - have a numeric up/down for the quantity you wish to alter the property by
+  - have a listbox to select if the quantity is in units or percentage
+  - have value up/down buttons to change the property
+    - do edge detection

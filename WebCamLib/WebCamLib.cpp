@@ -27,6 +27,107 @@ using namespace WebCamLib;
 // Private variables
 #define MAX_CAMERAS 10
 
+#pragma region CameraInfo Items
+CameraInfo::CameraInfo( int index, String^ name )
+{
+	Index = index;
+	Name = name;
+}
+
+int CameraInfo::Index::get()
+{
+	return index;
+}
+
+void CameraInfo::Index::set( int value )
+{
+	index = value;
+}
+
+String^ CameraInfo::Name::get()
+{
+	return name;
+}
+
+void CameraInfo::Name::set( String^ value )
+{
+	if( value != nullptr )
+		name = value;
+	else
+		throw gcnew ArgumentNullException( "Name cannot be null." );
+}
+#pragma endregion
+
+#pragma region CameraPropertyCapabilities Items
+CameraPropertyCapabilities::CameraPropertyCapabilities( int cameraIndex, CameraProperty prop, bool isGetSupported, bool isSetSupported, bool isGetRangeSupported )
+{
+	CameraIndex = cameraIndex;
+	Property = prop;
+	IsGetSupported = isGetSupported;
+	IsSetSupported = isSetSupported;
+	IsGetRangeSupported = isGetRangeSupported;
+}
+
+int CameraPropertyCapabilities::CameraIndex::get()
+{
+	return cameraIndex;
+}
+
+void CameraPropertyCapabilities::CameraIndex::set( int value )
+{
+	cameraIndex =value;
+}
+
+CameraProperty CameraPropertyCapabilities::Property::get()
+{
+	return prop;
+}
+
+void CameraPropertyCapabilities::Property::set( CameraProperty value )
+{
+	prop = value;
+}
+
+bool CameraPropertyCapabilities::IsGetSupported::get()
+{
+	return isGetSupported;
+}
+
+void CameraPropertyCapabilities::IsGetSupported::set( bool value )
+{
+	isGetSupported = value;
+}
+
+bool CameraPropertyCapabilities::IsSetSupported::get()
+{
+	return isSetSupported;
+}
+
+void CameraPropertyCapabilities::IsSetSupported::set( bool value )
+{
+	isSetSupported = value;
+}
+
+bool CameraPropertyCapabilities::IsGetRangeSupported::get()
+{
+	return isGetRangeSupported;
+}
+
+void CameraPropertyCapabilities::IsGetRangeSupported::set( bool value )
+{
+	isGetRangeSupported = value;
+}
+
+bool CameraPropertyCapabilities::IsSupported::get()
+{
+	return IsGetSupported || IsSetSupported || IsGetRangeSupported;
+}
+
+bool CameraPropertyCapabilities::IsFullySupported::get()
+{
+	return IsGetSupported && IsSetSupported && IsGetRangeSupported;
+}
+#pragma endregion
 
 // Structure to hold camera information
 struct CameraInfoStruct
@@ -48,22 +149,22 @@ CameraInfoStruct g_aCameraInfo[MAX_CAMERAS] = {0};
 
 // http://social.msdn.microsoft.com/Forums/sk/windowsdirectshowdevelopment/thread/052d6a15-f092-4913-b52d-d28f9a51e3b6
 void MyFreeMediaType(AM_MEDIA_TYPE& mt) {
-    if (mt.cbFormat != 0) {
-        CoTaskMemFree((PVOID)mt.pbFormat);
-        mt.cbFormat = 0;
-        mt.pbFormat = NULL;
-    }
-    if (mt.pUnk != NULL) {
-        // Unecessary because pUnk should not be used, but safest.
-        mt.pUnk->Release();
-        mt.pUnk = NULL;
-    }
+	if (mt.cbFormat != 0) {
+		CoTaskMemFree((PVOID)mt.pbFormat);
+		mt.cbFormat = 0;
+		mt.pbFormat = NULL;
+	}
+	if (mt.pUnk != NULL) {
+		// Unecessary because pUnk should not be used, but safest.
+		mt.pUnk->Release();
+		mt.pUnk = NULL;
+	}
 }
 void MyDeleteMediaType(AM_MEDIA_TYPE *pmt) {
-    if (pmt != NULL) {
-        MyFreeMediaType(*pmt); // See FreeMediaType for the implementation.
-        CoTaskMemFree(pmt);
-    }
+	if (pmt != NULL) {
+		MyFreeMediaType(*pmt); // See FreeMediaType for the implementation.
+		CoTaskMemFree(pmt);
+	}
 }
 
 
@@ -139,7 +240,7 @@ void CameraMethods::RefreshCameraList()
 			g_aCameraInfo[count].pMoniker->AddRef();
 
 			IPropertyBag *pPropBag;
-			hr = apIMoniker[0]->BindToStorage(0, 0, IID_IPropertyBag, (void **)&pPropBag);
+			hr = apIMoniker[0]->BindToStorage(NULL, NULL, IID_IPropertyBag, (void **)&pPropBag);
 			if (SUCCEEDED(hr))
 			{
 				// Retrieve the filter's friendly name
@@ -174,21 +275,28 @@ void CameraMethods::RefreshCameraList()
 CameraInfo^ CameraMethods::GetCameraInfo(int camIndex)
 {
 	if (camIndex >= Count)
-		throw gcnew ArgumentException("Camera index is out of bounds: " + Count.ToString());
+		throw gcnew ArgumentOutOfRangeException("Camera index is out of bounds: " + Count.ToString());
 
 	if (g_aCameraInfo[camIndex].pMoniker == NULL)
 		throw gcnew ArgumentException("There is no camera at index: " + camIndex.ToString());
 
-	CameraInfo^ camInfo = gcnew CameraInfo();
-	camInfo->index = camIndex;
-	camInfo->name = Marshal::PtrToStringBSTR((IntPtr)g_aCameraInfo[camIndex].bstrName);
+	CameraInfo^ camInfo = gcnew CameraInfo( camIndex, Marshal::PtrToStringBSTR((IntPtr)g_aCameraInfo[camIndex].bstrName) );
+
 	return camInfo;
 }
 
 /// <summary>
 /// Start the camera associated with the input handle
 /// </summary>
-void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height)
+void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp, interior_ptr<bool> successful)
+{
+	*successful = StartCamera( camIndex, width, height, bpp );
+}
+
+/// <summary>
+/// Start the camera associated with the input handle
+/// </summary>
+bool CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_ptr<int> height, interior_ptr<int> bpp)
 {
 	if (camIndex >= Count)
 		throw gcnew ArgumentException("Camera index is out of bounds: " + Count.ToString());
@@ -216,6 +324,8 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 			}
 		}
 	}
+
+	bool result = false;
 
 	IMoniker *pMoniker = g_aCameraInfo[camIndex].pMoniker;
 	pMoniker->AddRef();
@@ -265,8 +375,8 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 	}
 
 	// Set the resolution
-    if (SUCCEEDED(hr)) {
-		hr = SetCaptureFormat(g_pIBaseFilterCam, *width, *height);
+	if (SUCCEEDED(hr)) {
+		hr = SetCaptureFormat(g_pIBaseFilterCam, *width, *height, *bpp);
 	}
 
 	// Create a SampleGrabber
@@ -281,7 +391,6 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 		hr = ConfigureSampleGrabber(g_pIBaseFilterSampleGrabber);
 	}
 
-	
 	// Add Sample Grabber to the filter graph
 	if (SUCCEEDED(hr))
 	{
@@ -325,6 +434,7 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 					pVih = (VIDEOINFOHEADER*)mt.pbFormat;
 					*width = pVih->bmiHeader.biWidth;
 					*height = pVih->bmiHeader.biHeight;
+					*bpp = pVih->bmiHeader.biBitCount;
 				}
 				else
 				{
@@ -377,35 +487,481 @@ void CameraMethods::StartCamera(int camIndex, interior_ptr<int> width, interior_
 		pMoniker = NULL;
 	}
 
-	if (SUCCEEDED(hr))
+	if( result = SUCCEEDED( hr ) )
 		this->activeCameraIndex = camIndex;
-	else
-		throw gcnew COMException("Error Starting Camera", hr);
+
+	return result;
 }
 
-void CameraMethods::SetProperty(long lProperty, long lValue, bool bAuto)
+#pragma region Camera Property Support
+inline void CameraMethods::IsPropertySupported( CameraProperty prop, interior_ptr<bool> result )
 {
-	if (g_pIBaseFilterCam == NULL) throw gcnew ArgumentException("No Camera started"); 
+	*result = IsPropertySupported( prop );
+}
 
-    HRESULT hr = S_OK;
+inline bool CameraMethods::IsPropertySupported( CameraProperty prop )
+{
+	bool result = false;
+
+	if( IsCameraControlProperty( prop ) )
+		result = IsPropertySupported( GetCameraControlProperty( prop ) );
+	else if( IsVideoProcAmpProperty( prop ) )
+		result = IsPropertySupported( GetVideoProcAmpProperty( prop ) );
+
+	return result;
+}
+
+bool CameraMethods::IsPropertySupported( WebCamLib::CameraControlProperty prop )
+{
+	bool result = false;
+
+	IAMCameraControl * cameraControl = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&cameraControl);
+
+	if(SUCCEEDED(hr))
+	{
+		long lProperty = static_cast< long >( prop );
+		long value, captureFlags;
+		hr = cameraControl->Get(lProperty, &value, &captureFlags);
+
+		result = SUCCEEDED(hr);
+	}
+	else
+		throw gcnew InvalidOperationException( "Unable to determine if the property is supported." );
+
+	return result;
+}
+
+bool CameraMethods::IsPropertySupported( WebCamLib::VideoProcAmpProperty prop )
+{
+	bool result = false;
+
+	IAMVideoProcAmp * pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
+
+	if(SUCCEEDED(hr))
+	{
+		long lProperty = static_cast< long >( prop );
+		long value, captureFlags;
+		hr = pProcAmp->Get(lProperty, &value, &captureFlags);
+
+		result = SUCCEEDED(hr);
+	}
+	else
+		throw gcnew InvalidOperationException( "Unable to determine if the property is supported." );
+
+	return result;
+}
+
+inline bool CameraMethods::IsCameraControlProperty( CameraProperty prop )
+{
+	return IsPropertyMaskEqual( prop, PropertyTypeMask::CameraControlPropertyMask );
+}
+
+inline bool CameraMethods::IsVideoProcAmpProperty( CameraProperty prop )
+{
+	return IsPropertyMaskEqual( prop, PropertyTypeMask::VideoProcAmpPropertyMask );
+}
+
+inline bool CameraMethods::IsPropertyMaskEqual( CameraProperty prop, PropertyTypeMask mask )
+{
+	return ( static_cast< int >( prop ) & static_cast< int >( mask ) ) != 0;
+}
+
+inline void CameraMethods::GetProperty( CameraProperty prop, bool isValue, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful )
+{
+	*successful = GetProperty( prop, isValue, value, bAuto );
+}
+
+inline bool CameraMethods::GetProperty( CameraProperty prop, bool isValue, interior_ptr<long> value, interior_ptr<bool> bAuto )
+{
+	bool result;
+
+	if( isValue )
+		result = GetProperty_value( prop, value, bAuto );
+	else // is a percentage value
+		result = GetProperty_percentage( prop, value, bAuto );
+
+	return result;
+}
+
+inline WebCamLib::CameraControlProperty CameraMethods::GetCameraControlProperty( CameraProperty prop )
+{
+	if( IsCameraControlProperty( prop ) )
+	{
+		int value = static_cast< int >( prop );
+		int mask = static_cast< int >( PropertyTypeMask::CameraControlPropertyMask );
+		value &= ~mask;
+
+		return static_cast< WebCamLib::CameraControlProperty >( value );
+	}
+	else
+		throw gcnew OverflowException( "Property is not a camera property." );
+}
+
+inline WebCamLib::VideoProcAmpProperty CameraMethods::GetVideoProcAmpProperty( CameraProperty prop )
+{
+	if( IsVideoProcAmpProperty( prop ) )
+	{
+		int value = static_cast< int >( prop );
+		int mask = static_cast< int >( PropertyTypeMask::VideoProcAmpPropertyMask );
+		value &= ~mask;
+
+		return static_cast< WebCamLib::VideoProcAmpProperty >( value );
+	}
+	else
+		throw gcnew OverflowException( "Property is not a camera property." );
+}
+
+inline void CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+{
+	*successful = GetProperty_value( prop, value, bAuto );
+}
+
+inline bool CameraMethods::GetProperty_value( CameraProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto)
+{
+	bool result = false;
+
+	if( IsCameraControlProperty( prop ) )
+		result = GetProperty_value( GetCameraControlProperty( prop ), value, bAuto );
+	else if( IsVideoProcAmpProperty( prop ) )
+		result = GetProperty_value( GetVideoProcAmpProperty( prop ), value, bAuto );
+
+	return result;
+}
+
+inline void CameraMethods::GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+{
+	*successful = GetProperty_percentage( prop, percentage, bAuto );
+}
+
+bool CameraMethods::GetProperty_percentage( CameraProperty prop, interior_ptr<long> percentage, interior_ptr<bool> bAuto)
+{
+	bool result;
+
+	long value;
+	if( result = GetProperty_value( prop, &value, bAuto ) )
+	{
+		long min, max, steppingDelta, defaults;
+		bool placeHolder;
+		if( result = GetPropertyRange( prop, &min, &max, &steppingDelta, &defaults, &placeHolder ) )
+			*percentage = ( ( value - min ) * 100 ) / ( max - min + 1 );
+	}
+
+	return result;
+}
+
+inline void CameraMethods::SetProperty( CameraProperty prop, bool isValue, long value, bool bAuto, interior_ptr<bool> successful )
+{
+	*successful = SetProperty( prop, isValue, value, bAuto );
+}
+
+inline bool CameraMethods::SetProperty( CameraProperty prop, bool isValue, long value, bool bAuto )
+{
+	bool result;
+
+	if( isValue )
+		result = SetProperty_value( prop, value, bAuto );
+	else  // is a percentage value
+		result = SetProperty_percentage( prop, value, bAuto );
+
+	return result;
+}
+
+inline void CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto, interior_ptr<bool> successful)
+{
+	*successful = SetProperty_value( prop, value, bAuto );
+}
+
+inline bool CameraMethods::SetProperty_value(CameraProperty prop, long value, bool bAuto)
+{
+	return SetProperty_value( prop, value, bAuto, true );
+}
+
+inline void CameraMethods::SetProperty_value( CameraProperty prop, long value, bool bAuto, bool throwValidationError, interior_ptr<bool> successful )
+{
+	*successful = SetProperty_value( prop, value, bAuto, throwValidationError );
+}
+
+inline bool CameraMethods::SetProperty_value( CameraProperty prop, long value, bool bAuto, bool throwValidationError )
+{
+	bool result = false;
+
+	if( ValidatePropertyValue( prop, value ) )
+	{
+		if( IsCameraControlProperty( prop ) )
+			result = SetProperty_value( GetCameraControlProperty( prop ), value, bAuto );
+		else if( IsVideoProcAmpProperty( prop ) )
+			result = SetProperty_value( GetVideoProcAmpProperty( prop ), value, bAuto );
+	}
+	else if( throwValidationError )
+		throw gcnew ArgumentOutOfRangeException( "Property value is outside of its defined range." );
+
+	return result;
+}
+
+inline void CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage, bool bAuto, interior_ptr<bool> successful)
+{
+	*successful = SetProperty_percentage( prop, percentage, bAuto );
+}
+
+bool CameraMethods::SetProperty_percentage(CameraProperty prop, long percentage, bool bAuto)
+{
+	if( !IsPropertySupported( prop ) )
+		throw gcnew ArgumentException( "Property is not supported." );
+	else if( percentage >= 0 && percentage <= 100 )
+	{
+		bool result;
+
+		long min, max, steppingDelta, defaults;
+		bool placeHolder;
+		if( result = GetPropertyRange( prop, &min, &max, &steppingDelta, &defaults, &placeHolder ) )
+		{
+			long value = ( ( max - min ) * percentage ) / 100 + min;
+			result = SetProperty_value( prop, value, bAuto );
+		}
+
+		return result;
+	}
+	else
+		throw gcnew ArgumentOutOfRangeException( "Percentage is not valid." );
+}
+
+inline void CameraMethods::GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto, interior_ptr<bool> successful)
+{
+	*successful = GetPropertyRange( prop, min, max, steppingDelta, defaults, bAuto );
+}
+
+inline bool CameraMethods::GetPropertyRange( CameraProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto)
+{
+	bool result = false;
+
+	if( IsCameraControlProperty( prop ) )
+		result = GetPropertyRange( GetCameraControlProperty( prop ), min, max, steppingDelta, defaults, bAuto );
+	else if( IsVideoProcAmpProperty( prop ) )
+		result = GetPropertyRange( GetVideoProcAmpProperty( prop ), min, max, steppingDelta, defaults, bAuto );
+
+	return result;
+}
+
+bool CameraMethods::GetPropertyRange( WebCamLib::CameraControlProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto )
+{
+	bool result = false;
+
+	IAMCameraControl * cameraControl = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&cameraControl);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		long minimum, maximum, step, default_value, flags;
+		hr = cameraControl->GetRange( lProperty, &minimum, &maximum, &step, &default_value, &flags );
+
+		if( SUCCEEDED( hr ) )
+		{
+			*min = minimum;
+			*max = maximum;
+			*steppingDelta = step;
+			*defaults = default_value;
+			*bAuto = flags == CameraControl_Flags_Auto;
+
+			result = SUCCEEDED(hr);
+		}
+	}
+
+	return result;
+}
+
+bool CameraMethods::GetPropertyRange( WebCamLib::VideoProcAmpProperty prop, interior_ptr<long> min, interior_ptr<long> max, interior_ptr<long> steppingDelta, interior_ptr<long> defaults, interior_ptr<bool> bAuto )
+{
+	bool result = false;
+
+	IAMVideoProcAmp * pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		long minimum, maximum, step, default_value, flags;
+		hr = pProcAmp->GetRange( lProperty, &minimum, &maximum, &step, &default_value, &flags );
+
+		if( SUCCEEDED( hr ) )
+		{
+			*min = minimum;
+			*max = maximum;
+			*steppingDelta = step;
+			*defaults = default_value;
+			*bAuto = flags == CameraControl_Flags_Auto;
+
+			result = SUCCEEDED(hr);
+		}
+	}
+
+	return result;
+}
+
+bool CameraMethods::GetProperty_value( WebCamLib::CameraControlProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto )
+{
+	if( g_pIBaseFilterCam == NULL )
+		throw gcnew InvalidOperationException( "No camera started." );
+
+	bool result = false;
+
+	IAMCameraControl * cameraControl = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&cameraControl);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		long lValue, captureFlags;
+		hr = cameraControl->Get(lProperty, &lValue, &captureFlags);
+
+		if( result = SUCCEEDED( hr ) )
+		{
+			*value = lValue;
+			*bAuto = captureFlags == CameraControl_Flags_Auto;
+		}
+	}
+
+	return result;
+}
+
+bool CameraMethods::GetProperty_value( WebCamLib::VideoProcAmpProperty prop, interior_ptr<long> value, interior_ptr<bool> bAuto )
+{
+	if( g_pIBaseFilterCam == NULL )
+		throw gcnew InvalidOperationException( "No camera started." );
+
+	bool result = false;
+
+	IAMVideoProcAmp * pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		long lValue, captureFlags;
+		hr = pProcAmp->Get(lProperty, &lValue, &captureFlags);
+
+		if( result = SUCCEEDED( hr ) )
+		{
+			*value = lValue;
+			*bAuto = captureFlags == VideoProcAmp_Flags_Auto;
+		}
+	}
+
+	return result;
+}
+
+bool CameraMethods::SetProperty_value( WebCamLib::CameraControlProperty prop, long value, bool bAuto )
+{
+	if( g_pIBaseFilterCam == NULL )
+		throw gcnew InvalidOperationException( "No camera started." );
+
+	bool result = false;
+
+	// Query the capture filter for the IAMCameraControl interface.
+	IAMCameraControl * cameraControl = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMCameraControl, (void**)&cameraControl);
+
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		hr = cameraControl->Set(lProperty, value, bAuto ? CameraControl_Flags_Auto : CameraControl_Flags_Manual);
+
+		result = SUCCEEDED( hr );
+	}
+
+	return result;
+}
+
+bool CameraMethods::SetProperty_value( WebCamLib::VideoProcAmpProperty prop, long value, bool bAuto )
+{
+	if( g_pIBaseFilterCam == NULL )
+		throw gcnew InvalidOperationException( "No camera started." );
+
+	bool result = false;
 
 	// Query the capture filter for the IAMVideoProcAmp interface.
-	IAMVideoProcAmp *pProcAmp = 0;
-	hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
+	IAMVideoProcAmp * pProcAmp = NULL;
+	HRESULT hr = g_pIBaseFilterCam->QueryInterface(IID_IAMVideoProcAmp, (void**)&pProcAmp);
 
-	// Get the range and default value.
-    long Min, Max, Step, Default, Flags;
-	if (SUCCEEDED(hr)) {
-	   hr = pProcAmp->GetRange(lProperty, &Min, &Max, &Step, &Default, &Flags);
+	if( SUCCEEDED( hr ) )
+	{
+		long lProperty = static_cast< long >( prop );
+		hr = pProcAmp->Set(lProperty, value, bAuto ? VideoProcAmp_Flags_Auto : VideoProcAmp_Flags_Manual);
+
+		result = SUCCEEDED( hr );
 	}
 
-	if (SUCCEEDED(hr)) {
-		lValue = Min + (Max - Min) * lValue / 100;
-		hr = pProcAmp->Set(lProperty, lValue, bAuto ? VideoProcAmp_Flags_Auto : VideoProcAmp_Flags_Manual);
-	}
-
-	if (!SUCCEEDED(hr)) throw gcnew COMException("Error Set Property", hr);
+	return result;
 }
+
+void CameraMethods::PropertyHasRange( CameraProperty prop, interior_ptr<bool> successful )
+{
+	*successful = PropertyHasRange( prop );
+}
+
+bool CameraMethods::PropertyHasRange( CameraProperty prop )
+{
+	bool result = prop != CameraProperty::WhiteBalance && prop != CameraProperty::Gain;
+
+	return result;
+}
+
+inline void CameraMethods::ValidatePropertyValue( CameraProperty prop, long value, interior_ptr<bool> successful )
+{
+	*successful = ValidatePropertyValue( prop, value );
+}
+
+bool CameraMethods::ValidatePropertyValue( CameraProperty prop, long value )
+{
+	bool result = true;
+
+	if( PropertyHasRange( prop ) )
+	{
+		long min, max, steppingDelta, defaults;
+		bool bAuto;
+		GetPropertyRange( prop, &min, &max, &steppingDelta, &defaults, &bAuto );
+
+		result = value >= min && value <= max;
+	}
+
+	return result;
+}
+
+CameraPropertyCapabilities^ CameraMethods::GetPropertyCapability( CameraProperty prop )
+{
+	long value;
+	bool isAuto;
+
+	bool propertyHasRange = PropertyHasRange( prop );
+	bool isSetSupported;
+	bool isGetSupported = GetProperty_value( prop, &value, &isAuto );
+	if( isGetSupported )
+		isSetSupported = SetProperty_value( prop, value, isAuto );
+	else
+		isSetSupported = false;
+
+	CameraPropertyCapabilities^ result = gcnew CameraPropertyCapabilities( ActiveCameraIndex, prop, isGetSupported, isSetSupported, propertyHasRange );
+
+	return result;
+}
+
+IDictionary<CameraProperty, CameraPropertyCapabilities^> ^ CameraMethods::PropertyCapabilities::get()
+{
+	Array^ propertyValues = Enum::GetValues( CameraProperty::typeid );
+
+	IDictionary<CameraProperty, CameraPropertyCapabilities^> ^ result = gcnew Dictionary<CameraProperty, CameraPropertyCapabilities^>( propertyValues->Length );
+
+	for( Int32 i = 0; i < propertyValues->Length; ++i )
+	{
+		CameraProperty prop = static_cast<CameraProperty>( propertyValues->GetValue( i ) );
+		result->Add( prop, GetPropertyCapability( prop ) );
+	}
+
+	return result;
+}
+#pragma endregion
 
 /// <summary>
 /// Closes any open webcam and releases all unmanaged resources
@@ -609,64 +1165,161 @@ HRESULT CameraMethods::ConfigureSampleGrabber(IBaseFilter *pIBaseFilter)
 	return hr;
 }
 
-
-
-// based on http://stackoverflow.com/questions/7383372/cant-make-iamstreamconfig-setformat-to-work-with-lifecam-studio
-HRESULT CameraMethods::SetCaptureFormat(IBaseFilter* pCap, int width, int height)
+void CameraMethods::GetCaptureSizes(int index, IList<Tuple<int,int,int>^> ^ sizes)
 {
-    HRESULT hr = S_OK;
+	sizes->Clear();
 
-    IAMStreamConfig *pConfig = NULL;
-    hr = g_pCaptureGraphBuilder->FindInterface(
-        &PIN_CATEGORY_CAPTURE,
+	HRESULT hr = S_OK;
+
+	if (index >= Count)
+		throw gcnew ArgumentException("Camera index is out of bounds: " + Count.ToString());
+
+	if (g_aCameraInfo[index].pMoniker == NULL)
+		throw gcnew ArgumentException("There is no camera at index: " + index.ToString());
+
+	if (g_pGraphBuilder != NULL)
+		throw gcnew ArgumentException("Graph Builder was null");
+
+	IMoniker *pMoniker = g_aCameraInfo[index].pMoniker;
+	pMoniker->AddRef();
+
+	IBaseFilter* pCap = NULL;
+	// Build the camera from the moniker
+	if (SUCCEEDED(hr))
+		hr = pMoniker->BindToObject(NULL, NULL, IID_IBaseFilter, (LPVOID*)&pCap);
+
+	ICaptureGraphBuilder2* captureGraphBuilder = NULL;
+	if (SUCCEEDED(hr))
+	{
+		hr = CoCreateInstance(CLSID_CaptureGraphBuilder2,
+			NULL,
+			CLSCTX_INPROC,
+			IID_ICaptureGraphBuilder2,
+			(LPVOID*)&captureGraphBuilder);
+	}
+
+	IAMStreamConfig *pConfig = NULL;
+	if(SUCCEEDED(hr))
+		hr = captureGraphBuilder->FindInterface(
+		&PIN_CATEGORY_CAPTURE,
 		&MEDIATYPE_Video, 
-        pCap, // Pointer to the capture filter.
-        IID_IAMStreamConfig, (void**)&pConfig);
-    if (!SUCCEEDED(hr)) return hr;
+		pCap, // Pointer to the capture filter.
+		IID_IAMStreamConfig, (void**)&pConfig);
 
-    int iCount = 0, iSize = 0;
-    hr = pConfig->GetNumberOfCapabilities(&iCount, &iSize);
+	int iCount = 0, iSize = 0;
+	if(SUCCEEDED(hr))
+		hr = pConfig->GetNumberOfCapabilities(&iCount, &iSize);
+
+	// Check the size to make sure we pass in the correct structure.
+	if (SUCCEEDED(hr) && iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
+	{
+		// Use the video capabilities structure.
+		for (int iFormat = 0; iFormat < iCount; iFormat++)
+		{
+			VIDEO_STREAM_CONFIG_CAPS scc;
+			AM_MEDIA_TYPE *pmt;
+			/* Note:  Use of the VIDEO_STREAM_CONFIG_CAPS structure to configure a video device is 
+			deprecated. Although the caller must allocate the buffer, it should ignore the 
+			contents after the method returns. The capture device will return its supported 
+			formats through the pmt parameter. */
+			hr = pConfig->GetStreamCaps(iFormat, &pmt, (BYTE*)&scc);
+			if (SUCCEEDED(hr))
+			{
+				/* Examine the format, and possibly use it. */
+				if (pmt->formattype == FORMAT_VideoInfo) {
+					// Check the buffer size.
+					if (pmt->cbFormat >= sizeof(VIDEOINFOHEADER))
+					{
+						VIDEOINFOHEADER *pVih =  reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
+						BITMAPINFOHEADER *bmiHeader = &pVih->bmiHeader;
+
+						int width = bmiHeader->biWidth;
+						int height = bmiHeader->biHeight;
+						int bitCount = bmiHeader->biBitCount;
+
+						sizes->Add( gcnew Tuple<int,int,int>( width, height, bitCount ) );
+					}
+				}
+
+				// Delete the media type when you are done.
+				MyDeleteMediaType(pmt);
+			}
+		}
+	}
+
+	// Cleanup
+	if (pMoniker != NULL)
+	{
+		pMoniker->Release();
+		pMoniker = NULL;
+	}
+}
+
+IList<Tuple<int,int,int>^> ^ CameraMethods::CaptureSizes::get()
+{
+	IList<Tuple<int,int,int>^> ^ result = gcnew List<Tuple<int,int,int>^>();
+
+	GetCaptureSizes( ActiveCameraIndex, result );
+
+	return result;
+}
+
+// If bpp is -1, the first format matching the width and height is selected.
+// based on http://stackoverflow.com/questions/7383372/cant-make-iamstreamconfig-setformat-to-work-with-lifecam-studio
+HRESULT CameraMethods::SetCaptureFormat(IBaseFilter* pCap, int width, int height, int bpp)
+{
+	HRESULT hr = S_OK;
+
+	IAMStreamConfig *pConfig = NULL;
+	hr = g_pCaptureGraphBuilder->FindInterface(
+		&PIN_CATEGORY_CAPTURE,
+		&MEDIATYPE_Video, 
+		pCap, // Pointer to the capture filter.
+		IID_IAMStreamConfig, (void**)&pConfig);
 	if (!SUCCEEDED(hr)) return hr;
 
-    // Check the size to make sure we pass in the correct structure.
-    if (iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
+	int iCount = 0, iSize = 0;
+	hr = pConfig->GetNumberOfCapabilities(&iCount, &iSize);
+	if (!SUCCEEDED(hr)) return hr;
+
+	// Check the size to make sure we pass in the correct structure.
+	if (iSize == sizeof(VIDEO_STREAM_CONFIG_CAPS))
 	{
-        // Use the video capabilities structure.
-        for (int iFormat = 0; iFormat < iCount; iFormat++)
-        {
-            VIDEO_STREAM_CONFIG_CAPS scc;
-            AM_MEDIA_TYPE *pmt;
-            /* Note:  Use of the VIDEO_STREAM_CONFIG_CAPS structure to configure a video device is 
-            deprecated. Although the caller must allocate the buffer, it should ignore the 
-            contents after the method returns. The capture device will return its supported 
-            formats through the pmt parameter. */
-            hr = pConfig->GetStreamCaps(iFormat, &pmt, (BYTE*)&scc);
-            if (SUCCEEDED(hr))
-            {
-                /* Examine the format, and possibly use it. */
-                if (pmt->formattype == FORMAT_VideoInfo) {
-                    // Check the buffer size.
-                    if (pmt->cbFormat >= sizeof(VIDEOINFOHEADER))
-                    {
-                        VIDEOINFOHEADER *pVih =  reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
-                        BITMAPINFOHEADER *bmiHeader = &pVih->bmiHeader;
+		// Use the video capabilities structure.
+		for (int iFormat = 0; iFormat < iCount; iFormat++)
+		{
+				VIDEO_STREAM_CONFIG_CAPS scc;
+				AM_MEDIA_TYPE *pmt;
+				/* Note:  Use of the VIDEO_STREAM_CONFIG_CAPS structure to configure a video device is 
+				deprecated. Although the caller must allocate the buffer, it should ignore the 
+				contents after the method returns. The capture device will return its supported 
+				formats through the pmt parameter. */
+				hr = pConfig->GetStreamCaps(iFormat, &pmt, (BYTE*)&scc);
+				if (SUCCEEDED(hr))
+				{
+					/* Examine the format, and possibly use it. */
+					if (pmt->formattype == FORMAT_VideoInfo) {
+						// Check the buffer size.
+						if (pmt->cbFormat >= sizeof(VIDEOINFOHEADER))
+						{
+								VIDEOINFOHEADER *pVih =  reinterpret_cast<VIDEOINFOHEADER*>(pmt->pbFormat);
+								BITMAPINFOHEADER *bmiHeader = &pVih->bmiHeader;
 
-                        /* Access VIDEOINFOHEADER members through pVih. */
-                        if( bmiHeader->biWidth == width && bmiHeader->biHeight == height && 
-                            bmiHeader->biBitCount == 24)
-                        {
-                            hr = pConfig->SetFormat(pmt);
+								/* Access VIDEOINFOHEADER members through pVih. */
+								if( bmiHeader->biWidth == width && bmiHeader->biHeight == height && ( bmiHeader->biBitCount == -1 || bmiHeader->biBitCount == bpp) )
+								{
+									hr = pConfig->SetFormat(pmt);
 
-							MyDeleteMediaType(pmt); break;
-                        }
-                    }
-                }
+									break;
+								}
+						}
+					}
 
-                // Delete the media type when you are done.
-                MyDeleteMediaType(pmt);
-            }
-        }
-    }
+					// Delete the media type when you are done.
+					MyDeleteMediaType(pmt);
+				}
+		}
+	}
 
 	return hr;
 }

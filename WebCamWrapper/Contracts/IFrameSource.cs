@@ -6,7 +6,7 @@ namespace Touchless.Vision.Contracts
     {
         event Action<IFrameSource, Frame, double> NewFrame;
 
-        void StartFrameCapture();
+        bool StartFrameCapture();
         void StopFrameCapture();
     }
 }

@@ -45,14 +45,17 @@ namespace Touchless.Vision.Camera
             this.Camera = camera;
         }
 
-        public void StartFrameCapture()
+        public bool StartFrameCapture()
         {
-            if (!IsCapturing && this.Camera != null)
+           bool result;
+
+            if (result = !IsCapturing && this.Camera != null)
             {
                 this.Camera.OnImageCaptured += OnImageCaptured;
-                this.Camera.StartCapture();
-                IsCapturing = true;
+                IsCapturing = result = this.Camera.StartCapture();
             }
+
+            return result;
         }
 
         public void StopFrameCapture()
@@ -60,7 +63,7 @@ namespace Touchless.Vision.Camera
             if (IsCapturing)
             {
                 this.Camera.StopCapture();
-                this.Camera.OnImageCaptured += OnImageCaptured;
+                this.Camera.OnImageCaptured -= OnImageCaptured;
                 this.IsCapturing = false;
             }
         }
