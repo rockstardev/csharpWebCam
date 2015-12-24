@@ -70,10 +70,11 @@ namespace Touchless.Vision.Camera
 
         private void OnImageCaptured(object sender, CameraEventArgs e)
         {
-            if (IsCapturing && this.NewFrame != null)
+            var handler = this.NewFrame;
+            if (IsCapturing && handler != null)
             {
                 var frame = new Frame(e.Image);
-                this.NewFrame(this, frame, e.CameraFps);
+                handler(this, frame, e.CameraFps);
             }
         }
 
