@@ -1063,10 +1063,12 @@ namespace Touchless.Vision.Camera
             }
          }
 
-         if( OnImageCaptured != null )
+            var handler = OnImageCaptured;
+
+         if ( handler != null )
          {
             var fps = ( int ) ( 1 / dtCap.Subtract( _dtLastCap ).TotalSeconds );
-            OnImageCaptured.Invoke( this, new CameraEventArgs( bitmap, fps ) );
+            handler.Invoke( this, new CameraEventArgs( bitmap, fps ) );
          }
 
          _dtLastCap = dtCap;
